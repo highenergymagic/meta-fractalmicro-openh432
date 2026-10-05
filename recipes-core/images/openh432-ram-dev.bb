@@ -2,7 +2,7 @@
 SUMMARY = "OpenH432 RAM-only systemd hardware-development image"
 LICENSE = "MIT"
 inherit core-image
-IMAGE_INSTALL = "packagegroup-core-boot systemd systemd-networkd systemd-resolved systemd-timesyncd openh432-ram-policy alsa-utils-aplay alsa-utils-amixer"
+IMAGE_INSTALL = "packagegroup-core-boot systemd systemd-networkd openh432-ram-policy alsa-utils-aplay alsa-utils-amixer"
 IMAGE_FEATURES = ""
 IMAGE_FSTYPES = "cpio.gz"
 IMAGE_LINGUAS = ""

@@ -1,0 +1,24 @@
+# Physical USB diagnostic console ONLY. Not a production login policy.
+[Unit]
+Description=OpenH432 RAM diagnostic USB shell
+Requires=dev-ttyGS0.device
+After=dev-ttyGS0.device systemd-user-sessions.service
+ConditionPathExists=/dev/ttyGS0
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -i
+Restart=always
+RestartSec=1s
+TimeoutStopSec=2s
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/ttyGS0
+TTYReset=yes
+# This physical debug shell is not a login session. Forced vhangup triggers
+# the current USB gadget driver's zero-open-count close warning.
+TTYVHangup=no
+
+[Install]
+WantedBy=multi-user.target

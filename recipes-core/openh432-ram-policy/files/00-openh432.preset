@@ -1,0 +1,2 @@
+enable serial-getty@ttyGS0.service
+disable systemd-repart.service

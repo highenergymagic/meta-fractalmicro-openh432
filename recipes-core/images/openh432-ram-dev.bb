@@ -21,3 +21,16 @@ python check_ram_slot_size() {
             bb.fatal('RAM image exceeds the tested 16 MiB RAM52 slot: ' + path)
 }
 IMAGE_POSTPROCESS_COMMAND += "check_ram_slot_size; "
+
+# This image is the final RAM root, not a transient initrd or disk installer.
+python finalize_ram_root() {
+    from pathlib import Path
+    root = Path(d.getVar('IMAGE_ROOTFS'))
+    (root / 'etc/fstab').write_text('# OpenH432 RAM development: no persistent mounts\n')
+    (root / 'etc/machine-id').write_text('')
+    if (root / 'etc/initrd-release').exists():
+        bb.fatal('RAM development image must not enter systemd initrd switch-root mode')
+    if not (root / 'init').is_file():
+        bb.fatal('Missing RAM /init bootstrap')
+}
+ROOTFS_POSTPROCESS_COMMAND += "finalize_ram_root; "

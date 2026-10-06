@@ -1,38 +1,66 @@
 # meta-fractalmicro-openh432
 
-Fractal Microsystems' OpenH432 operating-system policy layer for Yocto 6.0
-Wrynose. Hardware support is separate in
+Operating-system policy and image recipes for OpenH432, a Linux-based
+operating system in development for the HIMS BrailleSense U2.
+
+This Fractal Microsystems layer defines the software environment above
+the board support package. It uses Yocto/OpenEmbedded, glibc and systemd,
+with hardware support maintained separately in
 [meta-fractalmicro-H432B](https://github.com/highenergymagic/meta-fractalmicro-H432B).
-Use [openh432-build](https://github.com/highenergymagic/openh432-build) for
-pinned container builds. Metadata and new policy files are MIT.
 
-Current target: `openh432-ram-dev`, a full glibc/systemd OS in initramfs,
-not an installer and not an initrd that switches to persistent storage.
-The RAM image uses XZ/CRC32 with a fixed compressor thread count and remains
-within the qualified loader's 16 MiB compressed slot. Image metadata and
-artifact names derive from the pinned build epoch. Required systemd tools
-and dynamically loaded seccomp/ACL/Zstd libraries are explicitly installed;
-content guards reject incomplete images despite recommendations being off.
-A real U2 RAM boot passed systemd health, read-only hardware checks and a
-bounded seccomp/cgroup/filesystem-isolation smoke test. This is not full
-security qualification or an installed firmware release.
+## What this layer provides
 
-The development policy exposes an unauthenticated physical USB root shell.
-It must not be included in production images.
+- Distribution configuration for `DISTRO = "openh432"`.
+- Package selection and development image composition.
+- systemd service and access policies.
+- Image packaging and checks on required contents and size.
 
-No automatic storage mounting, partitioning, UBI attachment, filesystem
-formatting or firmware updates are configured. Repart is gated, GPT automatic
-discovery is disabled and the BSP retains kernel-level storage write guards.
-No sound is played automatically.
+Hardware drivers, device trees and bootloader patches belong to the BSP
+layer. Container configuration and source revision locks belong to
+[openh432-build](https://github.com/highenergymagic/openh432-build).
 
-Production/recovery/systembase/systemext images and coordinated A/B updates
-are planned, not implemented. Accessibility services still need bring-up.
-Using systemd or Yocto alone does not make this a secure production OS.
+## Development images
 
-## Fastboot envelope
+The current operating system is a RAM-resident development environment,
+not a production installation or an installer.
 
-Build `openh432-fastboot-ram` to package the same kernel, DTB and RAM root as
-`openh432-ram-boot.img` (Android boot header v2, not Android userspace).
-The BSP's separate RAM53 fastboot loader can boot it using the standard host
-tool. This image is RAM-only; it does not install a kernel to NAND.
-Packaging is deterministic and runs inside the pinned Yocto builder.
+| Target | Purpose |
+| --- | --- |
+| `openh432-ram-dev` | A glibc/systemd development system packaged as an initramfs. |
+| `openh432-fastboot-ram` | The kernel, device tree and development initramfs packaged for the BSP's fastboot RAM loader. |
+
+The fastboot bundle uses an Android boot-image header for compatibility
+with the host tool; the operating system itself is not Android.
+
+The development system has booted on a U2 and passed systemd health and
+selected service-isolation checks. A boot from NAND still runs this
+initramfs; it does not imply a transition to a persistent production root.
+
+## Building
+
+Follow the [build guide](https://github.com/highenergymagic/openh432-build#building)
+for the pinned container workflow and exact layer revisions. This layer
+targets Yocto Wrynose.
+
+Builds only produce artifacts. They do not connect to or modify a device.
+
+## Development access and limitations
+
+**Development images expose an unauthenticated root shell over physical
+USB. They are not suitable for production use.**
+
+Default storage access is protected against writes. Images do not
+automatically partition disks, format filesystems or install firmware.
+Hardware bring-up and accessibility services remain incomplete.
+
+Production and recovery images, persistent system storage, and coordinated
+A/B updates are still under development. See the
+[validation status](https://github.com/highenergymagic/openh432-build/blob/main/docs/status.md)
+for completed tests and current limitations, and the
+[BSP boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md)
+before attempting to boot an image.
+
+## License
+
+New metadata and policy files are MIT-licensed. Software included in the
+images retains its own upstream licenses.

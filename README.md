@@ -27,6 +27,7 @@ not a production installation or an installer.
 | Target | Purpose |
 | --- | --- |
 | `openh432-ram-dev` | A glibc/systemd development system packaged as an initramfs. |
+| `openh432-hardware-test` | An explicitly audible test initramfs with startup/shutdown services enabled; requires the assets layer. |
 | `openh432-fastboot-ram` | The kernel, device tree and development initramfs packaged for the BSP's fastboot RAM loader. |
 
 The fastboot bundle uses an Android boot-image header for compatibility
@@ -35,6 +36,10 @@ with the host tool; the operating system itself is not Android.
 The development system has booted on a U2 and passed systemd health and
 selected service-isolation checks. A boot from NAND still runs this
 initramfs; it does not imply a transition to a persistent production root.
+
+The optional [system sounds](docs/system-sounds.md) are sourced by
+[meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
+The default development image remains quiet; audio test policy is opt-in.
 
 ## Building
 

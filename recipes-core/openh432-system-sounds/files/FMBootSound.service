@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Fractal Microsystems startup sound
+After=local-fs.target sound.target
+ConditionPathExists=/etc/openh432/system-sounds.enabled
+ConditionPathExists=/usr/share/openh432/sounds/startup.wav
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/libexec/fm-system-sound startup
+ExecStopPost=-/usr/libexec/fm-system-sound mute
+TimeoutStartSec=12s
+TimeoutStopSec=2s
+NoNewPrivileges=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Fractal Microsystems shutdown sound
+# Reverse stop ordering keeps the player/filesystem available during playback.
+After=local-fs.target sound.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+# The helper checks system state: ordinary stop/restart must stay silent.
+ExecStop=-/usr/libexec/fm-system-sound shutdown
+ExecStopPost=-/usr/libexec/fm-system-sound mute
+TimeoutStopSec=12s
+NoNewPrivileges=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

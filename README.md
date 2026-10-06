@@ -60,6 +60,11 @@ for completed tests and current limitations, and the
 [BSP boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md)
 before attempting to boot an image.
 
+For host-side bootstrap and backup tools, see
+[openh432-tools](https://github.com/highenergymagic/openh432-tools) and its
+[conversion guide](https://github.com/highenergymagic/openh432-tools/blob/main/docs/installation.md).
+Building an image and converting a stock device are separate operations.
+
 ## License
 
 New metadata and policy files are MIT-licensed. Software included in the

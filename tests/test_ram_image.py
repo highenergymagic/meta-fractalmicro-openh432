@@ -25,7 +25,7 @@ class RamImage(unittest.TestCase):
 
     def test_kernel_compatible_deterministic_compression(self):
         text = RECIPE.read_text()
-        for setting in ('IMAGE_FSTYPES = "cpio.xz"', 'XZ_INTEGRITY_CHECK = "crc32"',
+        for setting in ('IMAGE_FSTYPES = "cpio.xz squashfs-xz"', 'XZ_INTEGRITY_CHECK = "crc32"',
                         'XZ_THREADS = "1"', 'XZ_MEMLIMIT = "128MiB"'):
             self.assertIn(setting, text)
         self.assertIn("16 * 1024 * 1024", text)

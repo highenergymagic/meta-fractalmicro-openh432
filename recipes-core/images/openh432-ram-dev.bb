@@ -1,10 +1,13 @@
 # SPDX-License-Identifier: MIT
 SUMMARY = "OpenH432 RAM-only systemd hardware-development image"
 LICENSE = "MIT"
-inherit core-image
-IMAGE_INSTALL = "packagegroup-core-boot os-release systemd systemd-networkd systemd-analyze systemd-extra-utils libseccomp libacl libzstd openh432-ram-policy alsa-utils-aplay alsa-utils-amixer"
+inherit core-image h432b-systembase
+IMAGE_INSTALL = "packagegroup-core-boot os-release systemd systemd-networkd systemd-analyze systemd-extra-utils libseccomp libacl libzstd openh432-ram-policy alsa-utils-aplay alsa-utils-amixer mtd-utils mtd-utils-ubifs coreutils"
 IMAGE_FEATURES = ""
-IMAGE_FSTYPES = "cpio.xz"
+# SquashFS is the same DEBUG userland for NAND-base qualification, not a
+# production root; it retains the physical USB root shell from ram-policy.
+IMAGE_FSTYPES = "cpio.xz squashfs-xz"
+EXTRA_IMAGECMD:squashfs-xz = "-comp xz -noappend -processors 1"
 # CRC32 is supported by the kernel decoder; one compressor thread makes the
 # stream independent of the build host CPU count, with an 8 MiB dictionary.
 XZ_COMPRESSION_LEVEL = "-6"

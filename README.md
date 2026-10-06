@@ -8,6 +8,15 @@ pinned container builds. Metadata and new policy files are MIT.
 
 Current target: `openh432-ram-dev`, a full glibc/systemd OS in initramfs,
 not an installer and not an initrd that switches to persistent storage.
+The RAM image uses XZ/CRC32 with a fixed compressor thread count and remains
+within the qualified loader's 16 MiB compressed slot. Image metadata and
+artifact names derive from the pinned build epoch. Required systemd tools
+and dynamically loaded seccomp/ACL/Zstd libraries are explicitly installed;
+content guards reject incomplete images despite recommendations being off.
+A real U2 RAM boot passed systemd health, read-only hardware checks and a
+bounded seccomp/cgroup/filesystem-isolation smoke test. This is not full
+security qualification or an installed firmware release.
+
 The development policy exposes an unauthenticated physical USB root shell.
 It must not be included in production images.
 

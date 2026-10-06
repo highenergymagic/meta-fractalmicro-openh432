@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Fractal Microsystems key-only maintenance SSH
+After=network.target
+ConditionFileNotEmpty=/root/.ssh/authorized_keys
+
+[Service]
+Type=simple
+RuntimeDirectory=openh432-ssh
+RuntimeDirectoryMode=0700
+UMask=0077
+ExecStartPre=/bin/sh -c 'test -s /run/openh432-ssh/host_ed25519 || @LIBEXECDIR@/openh432-ssh/dropbearkey -t ed25519 -f /run/openh432-ssh/host_ed25519'
+ExecStart=@LIBEXECDIR@/openh432-ssh/dropbear -F -E -s -j -k -p 22 -r /run/openh432-ssh/host_ed25519
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

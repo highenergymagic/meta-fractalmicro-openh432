@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 require openh432-ram-dev.bb
 SUMMARY = "NAND slot-B systembase with systemd, networking and system sounds"
-IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-wired-policy"
+IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-wired-policy openh432-maintenance-ssh"
 IMAGE_FSTYPES = "squashfs-xz"
 IMAGE_POSTPROCESS_COMMAND:remove = "check_ram_slot_size;"
 ROOTFS_POSTPROCESS_COMMAND += "write_systembase_slot; "

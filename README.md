@@ -21,8 +21,8 @@ layer. Container configuration and source revision locks belong to
 
 ## Development images
 
-The current operating system is a RAM-resident development environment,
-not a production installation or an installer.
+The layer provides RAM-resident diagnostic environments and a separate
+NAND systembase composition. Neither is a production installer.
 
 | Target | Purpose |
 | --- | --- |
@@ -34,8 +34,8 @@ The fastboot bundle uses an Android boot-image header for compatibility
 with the host tool; the operating system itself is not Android.
 
 The development system has booted on a U2 and passed systemd health and
-selected service-isolation checks. A boot from NAND still runs this
-initramfs; it does not imply a transition to a persistent production root.
+selected service-isolation checks. The RAM image remains distinct from the
+NAND-root composition documented below; neither provides persistent userdata.
 
 The optional [system sounds](docs/system-sounds.md) are sourced by
 [meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
@@ -95,3 +95,10 @@ Building an image and converting a stock device are separate operations.
 
 New metadata and policy files are MIT-licensed. Software included in the
 images retains its own upstream licenses.
+
+## Maintenance access
+
+The development systembase-B includes an opt-in, key-only SSH service.
+It stays inactive until an operator provisions an authorized public key;
+no credentials are built into images. See [maintenance SSH](docs/remote-access.md)
+for provisioning, host-key verification and volatile-identity limitations.

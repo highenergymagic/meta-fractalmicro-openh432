@@ -41,6 +41,27 @@ The optional [system sounds](docs/system-sounds.md) are sourced by
 [meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
 The default development image remains quiet; audio test policy is opt-in.
 
+## NAND root composition
+
+The slot-B NAND composition is built with `openh432-nand-b` and
+`openh432-systembase-b`. The kernel bundle contains the kernel, device tree
+and a minimal `openh432-early-b` initramfs, not the complete operating system.
+Early userspace attaches the existing UBI pool read-only, selects
+`systembase_b`, checks its state and slot marker, mounts SquashFS through
+ubiblock, and switches root to systemd.
+
+The base includes wired DHCP configuration and the selected KDE boot/shutdown
+sounds from
+[meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
+A 64 MiB volatile overlay supplies writable runtime state; changes are lost
+on reboot. This is not persistent userdata or coordinated A/B rollback.
+The original RAM development images remain separate diagnostic artifacts.
+The handoff reached systemd both in a RAM-launched test and after a software
+reboot using the installed NAND kernel. Ethernet configured automatically.
+The startup sound completed, with observed NAND-read playback underruns;
+audio buffering still needs work. Power-off, wake, persistent identity and
+coordinated updates remain unfinished.
+
 ## Building
 
 Follow the [build guide](https://github.com/highenergymagic/openh432-build#building)

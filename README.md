@@ -28,3 +28,11 @@ No sound is played automatically.
 Production/recovery/systembase/systemext images and coordinated A/B updates
 are planned, not implemented. Accessibility services still need bring-up.
 Using systemd or Yocto alone does not make this a secure production OS.
+
+## Fastboot envelope
+
+Build `openh432-fastboot-ram` to package the same kernel, DTB and RAM root as
+`openh432-ram-boot.img` (Android boot header v2, not Android userspace).
+The BSP's separate RAM53 fastboot loader can boot it using the standard host
+tool. This image is RAM-only; it does not install a kernel to NAND.
+Packaging is deterministic and runs inside the pinned Yocto builder.

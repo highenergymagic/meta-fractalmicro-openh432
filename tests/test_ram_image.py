@@ -7,7 +7,7 @@ import textwrap
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-RECIPE = ROOT / "recipes-core/images/openh432-ram-dev.bb"
+RECIPE = ROOT / "recipes-core/images/openh432-base-image.inc"
 REQUIRED = ("init", "usr/lib/os-release", "usr/bin/systemd-analyze", "usr/bin/systemd-run",
             "usr/bin/systemd-repart", "usr/bin/systemd-sysext",
             "usr/lib/systemd/systemd-networkd", "usr/lib/libseccomp.so.2",

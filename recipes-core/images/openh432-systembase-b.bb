@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-require openh432-ram-dev.bb
+require openh432-base-image.inc
 SUMMARY = "NAND slot-B systembase with systemd, networking and system sounds"
 IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-wired-policy openh432-maintenance-ssh gpsd gps-utils openh432-agps"
 IMAGE_FSTYPES = "squashfs-xz"

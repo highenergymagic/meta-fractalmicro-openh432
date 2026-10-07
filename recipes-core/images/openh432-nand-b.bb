@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-require openh432-reboot-test.bb
+require openh432-boot-image.inc
 SUMMARY = "NAND slot-B kernel bundle with minimal root handoff"
 do_compile[depends] = "linux-h432b-runtime:do_deploy openh432-early-b:do_image_complete"
 do_compile() {

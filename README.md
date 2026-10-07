@@ -28,7 +28,7 @@ NAND systembase composition. Neither is a production installer.
 | --- | --- |
 | `openh432-ram-dev` | A glibc/systemd development system packaged as an initramfs. |
 | `openh432-hardware-test` | An explicitly audible test initramfs with startup/shutdown services enabled; requires the assets layer. |
-| `openh432-fastboot-ram` | The kernel, device tree and development initramfs packaged for the BSP's fastboot RAM loader. |
+| `openh432-fastboot-ram` | The same runtime kernel and device tree as NAND boot, with a complete standalone RAM root for recovery/development. |
 
 The fastboot bundle uses an Android boot-image header for compatibility
 with the host tool; the operating system itself is not Android.
@@ -63,7 +63,10 @@ sounds from
 [meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
 A 64 MiB volatile overlay supplies writable runtime state; changes are lost
 on reboot. This is not persistent userdata or coordinated A/B rollback.
-The original RAM development images remain separate diagnostic artifacts.
+The standalone RAM environment remains available for initial conversion and
+recovery before a NAND systembase exists. Shared userland and boot-envelope
+metadata live in `.inc` files; the NAND image does not inherit a test-image
+recipe. The obsolete standalone reboot-test kernel/image has been retired.
 The handoff reached systemd both in a RAM-launched test and after a software
 reboot using the installed NAND kernel. Ethernet configured automatically.
 The startup sound completed, with observed NAND-read playback underruns;

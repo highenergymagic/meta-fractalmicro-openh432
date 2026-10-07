@@ -39,6 +39,7 @@ prerequisites are listed in the
 ## Configuration and reference
 
 - [Runtime policy](docs/runtime.md): root filesystem, services and state lifetime.
+- [Braille console](docs/braille.md): internal display, keyboard ownership and local-console integration.
 - [Remote access](docs/remote-access.md): maintenance SSH and credentials.
 - [System sounds](docs/system-sounds.md): packages, playback and volume policy.
 - [GPS service](docs/gps.md): receiver ownership and assistance configuration.

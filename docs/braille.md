@@ -38,9 +38,9 @@ Runtime configuration remains subject to the image's volatile overlay.
 
 ## Scope
 
-The operator confirmed readable virtual-console output, key entry at the
-login prompt and scroll-key navigation. Routing and broader chord coverage
-remain unqualified. The separate local-console policy automatically logs the
+The operator confirmed readable virtual-console output, key entry, Backspace,
+Enter, scroll-key navigation and cursor routing in the local console.
+Broader chord coverage and exhaustive routing-key coverage remain unqualified. The separate local-console policy automatically logs the
 built-in tty1 console into the unprivileged `user` account. Root remains
 password-locked; BRLTTY itself does not manage authentication. See the
 [runtime policy](runtime.md) for login and storage boundaries, and the

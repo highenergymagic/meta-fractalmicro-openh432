@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Fractal Microsystems internal braille console
+After=systemd-udev-trigger.service
+ConditionPathExists=/dev/h432b-braille
+[Service]
+Type=simple
+ExecStart=/usr/bin/brltty -n -e -f /etc/brltty.conf
+RuntimeDirectory=brltty
+RuntimeDirectoryMode=0700
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target

@@ -39,6 +39,14 @@ and systemd-networkd handles DHCP/IPv6. No network profile or credentials are
 shipped. Provision a private profile before starting the supplicant; the
 current writable root overlay is volatile and loses that profile on reboot.
 
+The systembase also includes BlueZ and the opt-in
+`FMBluetoothTransport.service` for the internal CSR BCSP controller.
+The transport service is disabled by default: factory address and radio
+configuration still require manual initialization. Discovery, pairing and
+L2CAP exchanges have passed on hardware; automatic startup and Bluetooth
+audio playback are not implemented. Pairing state in the current root overlay
+is volatile. See the [Bluetooth hardware guide](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/bluetooth.md).
+
 The optional `openh432-wifi-test` bundle supports explicit RTL8712 SDIO
 firmware, command and cfg80211 passive-scan diagnostics against the existing
 slot-B root. It shares the runtime driver and is not a standalone recovery system. Compatible firmware must be supplied independently; this layer does

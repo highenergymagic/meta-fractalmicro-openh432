@@ -1,0 +1,17 @@
+[Unit]
+Description=Fractal Microsystems Bluetooth BCSP transport
+Requires=dev-ttySAC0.device
+After=dev-ttySAC0.device
+Before=bluetooth.service
+
+[Service]
+Type=simple
+# Factory transport reset delay is 5000 ms. hciattach applies BCSP even parity.
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/hciattach -n -t 20 -s 1382400 /dev/ttySAC0 bcsp 1382400 noflow
+Restart=no
+TimeoutStartSec=30
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

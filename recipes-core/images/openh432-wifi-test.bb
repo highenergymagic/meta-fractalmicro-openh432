@@ -3,6 +3,7 @@ require openh432-nand-b.bb
 SUMMARY = "RTL8712 SDIO transport test using the installed slot-B root"
 do_compile[depends] = "linux-h432b-wifi-test:do_deploy openh432-early-b:do_image_complete"
 do_compile() {
+    rm -f ${B}/openh432-wifi-test.img
     python3 ${UNPACKDIR}/make-boot-image.py \
         --kernel ${DEPLOY_DIR_IMAGE}/kernel-wifi-test/zImage \
         --dtb ${DEPLOY_DIR_IMAGE}/kernel-wifi-test/s5pv210-hims-u2-runtime.dtb \

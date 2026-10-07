@@ -39,6 +39,7 @@ class BootImages(unittest.TestCase):
         self.assertIn("/kernel-wifi-test/s5pv210-hims-u2-runtime.dtb", recipe)
         self.assertIn("openh432-wifi-test.img", recipe)
         self.assertIn("16760832", recipe)
+        self.assertIn("rm -f ${B}/openh432-wifi-test.img", recipe)
 
     def test_root_compositions_share_metadata_not_a_test_image(self):
         for name in ("openh432-systembase-b", "openh432-ram-dev"):

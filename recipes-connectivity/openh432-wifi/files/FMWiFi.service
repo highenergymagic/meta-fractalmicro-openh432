@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Fractal Microsystems Wi-Fi initialization
+After=systemd-udev-trigger.service
+ConditionPathExists=/lib/firmware/h432b/rtl8712s.bin
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/default/openh432-wifi
+ExecStart=/usr/libexec/openh432-wifi-start
+RemainAfterExit=yes
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

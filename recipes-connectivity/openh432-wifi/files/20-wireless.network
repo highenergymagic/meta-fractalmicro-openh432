@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT
+[Match]
+Name=wlan0
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=yes
+
+[DHCPv4]
+RouteMetric=2048
+
+[IPv6AcceptRA]
+RouteMetric=2048

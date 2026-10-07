@@ -30,11 +30,28 @@ NAND systembase composition. Neither is a production installer.
 | `openh432-hardware-test` | An explicitly audible test initramfs with startup/shutdown services enabled; requires the assets layer. |
 | `openh432-fastboot-ram` | The same runtime kernel and device tree as NAND boot, with a complete standalone RAM root for recovery/development. |
 
+The default systembase includes `FMWiFi.service`, `iw`, `wpa_supplicant`,
+`wpa_cli` and the signed regulatory database. Compatible operator-supplied
+firmware enables automatic `wlan0` initialization. The station driver supports
+WPA2-Personal with CCMP; see the qualification guide for tested limitations.
+The standard `wpa_supplicant@wlan0.service` is ordered after radio startup,
+and systemd-networkd handles DHCP/IPv6. No network profile or credentials are
+shipped. Provision a private profile before starting the supplicant; the
+current writable root overlay is volatile and loses that profile on reboot.
+
 The optional `openh432-wifi-test` bundle supports explicit RTL8712 SDIO
-firmware, command and passive-scan diagnostics against the existing slot-B
-root. It is not a standalone recovery system or a working wireless network
-driver. Compatible firmware must be supplied independently; this layer does
-not fetch or redistribute it. See the
+firmware, command and cfg80211 passive-scan diagnostics against the existing
+slot-B root. It shares the runtime driver and is not a standalone recovery system. Compatible firmware must be supplied independently; this layer does
+not fetch or redistribute it. The optional `openh432-wifi-tools` target builds
+an archive containing `iw`, its libraries and the signed regulatory database;
+it is not a bootable image or a replacement root filesystem. Build it with
+`python3 scripts/bsp.py build openh432-wifi-tools` from the build repository.
+Its tar archive must be unpacked into a separate temporary directory, not over
+the running root. The bundled `iw` requires its accompanying libnl libraries;
+the `regulatory.db` and `regulatory.db.p7s` files belong together in the
+kernel firmware search path. Select the actual country with `iw reg set`;
+do not infer a regulatory domain from the network name. This archive contains
+no radio firmware or network credentials. See the
 [Wi-Fi qualification guide](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/wifi.md).
 
 The fastboot bundle uses an Android boot-image header for compatibility

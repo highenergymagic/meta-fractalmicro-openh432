@@ -47,18 +47,12 @@ Run `systemctl daemon-reload`, provision a public key and start the service
 as above. Do not overwrite an existing SSH service or authorized-key file.
 
 Qualify a key-authenticated session and host-key verification while USB is
-still attached before disconnecting USB. This is especially important when
-using SSH to observe the battery changing from external power to discharge.
+still attached before disconnecting USB. Verify independent network access before removing a diagnostic USB connection.
 
 ## Qualification
 
-The package built with the pinned OE toolchain and passed package QA.
-The systembase-B image includes the service's enablement link but no operator
-keys. A volatile-overlay test passed a key-authenticated Ethernet login with
-a host key obtained over USB and strict verification. A password-only request
-was rejected with public-key authentication as the only offered method.
-Systemd remained healthy, UBI read-only and the kernel untainted. The same
-procedure was repeated after a RAM-kernel reboot; DHCP assigned a different
-address, which was obtained from the device's local console before connecting.
-This is runtime-payload qualification, not installation of the rebuilt base
-image or qualification of persistent identities.
+Key-authenticated sessions and strict host-key verification passed over
+Ethernet and Wi-Fi. Password-only authentication was rejected. The normal
+systembase includes the key-gated service; no credentials are shipped.
+Persistent identity, multi-user policy and untrusted network exposure
+are not qualified.

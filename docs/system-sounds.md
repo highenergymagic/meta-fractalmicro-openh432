@@ -1,11 +1,16 @@
 # System sound services
 
-The optional openh432-system-sounds recipe provides FMBootSound.service and
-FMShutdownSound.service. It is not included in the development image and both
-units are disabled by default. This is bring-up policy, not a production audio
-session manager.
+The `openh432-system-sounds` package supplies `FMBootSound.service` and
+`FMShutdownSound.service`. Image policy selects enablement:
 
-Before enabling, qualify speaker/headphone routing and provide
+| Image | Policy |
+| --- | --- |
+| `openh432-systembase-b` | Assets included; boot/shutdown services enabled |
+| `openh432-ram-dev` | Quiet; sound services not selected |
+| `openh432-hardware-test` | Assets and explicit sound-test policy enabled |
+
+These are bounded system cues, not an audio session manager. In a custom
+image, before enabling, qualify speaker/headphone routing and provide
 /usr/share/openh432/sounds/startup.wav and shutdown.wav as 44.1 kHz stereo
 S16_LE PCM. Create /etc/openh432/system-sounds.enabled only after those checks.
 The player uses card OpenH432, analog volume 45 (below the kernel ceiling 50),
@@ -39,17 +44,10 @@ No sound-specific author/license notice has been established; this distinction
 is retained in that layer. Original Ogg files and COPYING accompany the WAVs.
 Our MIT integration metadata does not relicense the recordings.
 
-## Build validation
+## Validation and limits
 
-Pinned Yocto build, package QA and offline layer tests passed. Both services
-were installed in a RAM-resident development system and audibly tested;
-shutdown playback was exercised during a systemd reboot, not power removal.
-These tests did not install the services persistently.
-
-## Enabled test image
-
-Build openh432-hardware-test to include the assets and explicit sound-test
-policy. That image enables both services and installs the routing opt-in flag.
-The ordinary openh432-ram-dev image remains quiet. The test image builds and
-its enabled service links were inspected. Runtime services were separately
-qualified in RAM; a complete boot of this packaged test image remains pending.
+Startup and systemd-reboot shutdown playback have been heard on hardware.
+The normal NAND base includes assets and policy, but NAND-backed startup has
+exhibited underruns. Buffering and startup latency need further qualification.
+A shutdown cue cannot guarantee electrical poweroff or complete before an
+independent hardware cutoff.

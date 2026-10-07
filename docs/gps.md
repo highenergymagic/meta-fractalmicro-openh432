@@ -2,14 +2,9 @@
 
 The NAND systembase composition includes gpsd, its command-line clients, and
 the OpenH432 AGPS service package. Device drivers and UART/power descriptions
-remain in the hardware layer. The NAND runtime kernel used by
-`openh432-nand-b` and the GPS diagnostic profile now share the qualified
-GlobalTop GMM-U2P power/reset sequencing and UART description. This promotes
-GPS without enabling unrelated diagnostic hardware. The normal runtime now
-allows Linux UBI maintenance and internal SD writes; the static systembase
-itself remains mounted read-only.
-Previously installed NAND kernels lack this support and must be updated
-alongside the base userspace. Build and boot qualification are distinct.
+remain in the hardware layer. Normal runtime and GPS diagnostics share receiver sequencing. Use matching
+kernel and systembase artifacts from the pinned composition; gpsd requires
+the UART and power support supplied by the hardware layer.
 
 ## Activation and ownership
 
@@ -76,41 +71,19 @@ on the next gpsd service start. Refresh followed by a deliberate
 existing GPS clients.
 
 Receiver power-off, resume/re-aiding and inactivity-based power savings are
-not implemented by these services. The diagnostic kernel currently keeps
+not implemented by these services. The receiver power driver keeps
 the receiver powered. A successful upload does not prove satellite reception
 or faster time to first fix.
 
-## Validation
+## Validation and limits
 
-The pinned Yocto build of `openh432-systembase-b` passed with gpsd 3.27.5
-and the AGPS package. The resulting SquashFS image is 27,340,800 bytes,
-below the 200 MiB systembase limit. It has not yet undergone a new cross-host
-bit-for-bit comparison.
+The installed slot-B system passed local gpsd reports, proxy HTTPS refresh,
+UTC and 31-satellite acknowledged RAM assistance, and NMEA recovery afterward.
+Empty-cache startup, loopback-only listeners and rejection of concurrent
+uploader access have also passed.
 
-The GPS-enabled kernel and base image were subsequently installed in slot B
-with matching image readbacks and unchanged slot-A hashes. A normal NAND
-boot reached systemd with gpsd and the refresh timer active. Local receiver
-reports, proxy HTTPS refresh, and a service-managed 31-satellite acknowledged
-upload passed from the installed system. Linux UBI and internal SD reported
-writable; factory boot and BBT partitions remained protected.
-
-The first empty-cache assistance check took approximately 44 seconds on the
-NAND-backed system. It succeeded, but interpreter/module loading on this
-path is a remaining startup-performance issue. A successful GPS upload still
-does not demonstrate a navigation fix.
-
-The packaged programs, units, rules and dependencies were then staged into
-the running GPS test kernel's volatile overlay. Hardware checks passed for:
-
-- unassisted gpsd startup with no cached predictions;
-- proxy-only HTTPS refresh with certificate validation;
-- service-ordered UTC and 31-satellite RAM upload, with all acknowledgements
-  accepted and NMEA reception verified;
-- gpsd restart and local JSON reports after upload;
-- rejection of a concurrent upload without increasing the UART TX count;
-- loopback-only GPS listeners and an active refresh timer.
-
-The kernel remained untainted, NAND UBI remained read-only, and no systemd
-units were failed at the end of the test. No satellite fix was obtained:
-the reports remained at mode 1. These checks establish service integration,
-not acquisition-time improvement.
+No satellite fix or improved acquisition time is demonstrated. NAND-backed
+interpreter startup has been slow (an empty-cache check took about 44 seconds
+in one test); service ordering and cold-load latency require further work.
+Time-policy expiry, volatile cache and unimplemented receiver PM remain
+operational limitations.

@@ -1,7 +1,7 @@
-# Reboot-mode development
+# Reboot and maintenance integration
 
 Reboot-mode support is part of the normal runtime kernel and maintenance
-bootloader. The former standalone reboot-test image has been retired.
+bootloader. Use the normal NAND or standalone RAM composition below.
 
 For a complete standalone RAM environment, build `openh432-fastboot-ram`.
 It uses the runtime kernel and the `openh432-ram-dev` root filesystem;
@@ -13,4 +13,3 @@ The kernel bundle includes only the minimal root-handoff initramfs.
 
 See the [BSP reboot-mode contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/reboot-mode.md)
 for request values, qualification limits and optional diagnostics.
-Historical test results remain in Git history, not as extra image targets.

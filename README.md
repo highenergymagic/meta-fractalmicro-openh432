@@ -30,6 +30,11 @@ NAND systembase composition. Neither is a production installer.
 | `openh432-hardware-test` | An explicitly audible test initramfs with startup/shutdown services enabled; requires the assets layer. |
 | `openh432-fastboot-ram` | The same runtime kernel and device tree as NAND boot, with a complete standalone RAM root for recovery/development. |
 
+The optional `openh432-wifi-test` bundle qualifies RTL8712 SDIO transfers
+against the existing slot-B root; it is not a standalone recovery system or
+a working wireless network driver. See the
+[Wi-Fi qualification guide](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/wifi.md).
+
 The fastboot bundle uses an Android boot-image header for compatibility
 with the host tool; the operating system itself is not Android.
 

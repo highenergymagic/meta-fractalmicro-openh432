@@ -32,6 +32,14 @@ class BootImages(unittest.TestCase):
         self.assertNotIn("openh432-ram-dev", recipe)
         self.assertFalse((IMAGES / "openh432-reboot-test.bb").exists())
 
+    def test_wifi_bundle_is_explicit_and_keeps_slot_b_handoff(self):
+        recipe = (IMAGES / "openh432-wifi-test.bb").read_text()
+        self.assertIn("linux-h432b-wifi-test:do_deploy", recipe)
+        self.assertIn("openh432-early-b:do_image_complete", recipe)
+        self.assertIn("/kernel-wifi-test/s5pv210-hims-u2-runtime.dtb", recipe)
+        self.assertIn("openh432-wifi-test.img", recipe)
+        self.assertIn("16760832", recipe)
+
     def test_root_compositions_share_metadata_not_a_test_image(self):
         for name in ("openh432-systembase-b", "openh432-ram-dev"):
             self.assertIn("require openh432-base-image.inc",

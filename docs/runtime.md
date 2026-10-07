@@ -26,6 +26,7 @@ for layout and write boundaries.
 | Bluetooth | BlueZ packaged; FMBluetoothTransport disabled pending automatic factory initialization |
 | GPS | Local-only gpsd with proxy-backed RAM assistance |
 | System sounds | Enabled in NAND systembase; quiet RAM development image |
+| Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
 | SSH | Key-gated maintenance with volatile identity |
 | Power key | Actions ignored pending qualified shutdown/wake or suspend/resume |
 | Braille | FMBraille enabled; internal display, keyboard and routing devices owned by BRLTTY |
@@ -38,6 +39,22 @@ Configuration references:
 [system sounds](system-sounds.md),
 [Wi-Fi](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/wifi.md)
 and [Bluetooth](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/bluetooth.md).
+
+## Local account
+
+The standard NAND image includes `openh432-local-console`. It creates the
+single appliance account `user` (UID/GID 1000, shell `/bin/sh`, home
+`/home/user`) and enables automatic login only for `getty@tty1`.
+Logging out returns to the same account. No password is supplied or stored:
+the account's password is locked, and the local getty performs the authorized
+login without a password. The account has no sudo or additional device groups.
+
+Root remains password-locked. SSH remains key-only and is not enabled by
+this policy; serial and USB services are unchanged. Physical access to the
+built-in console provides access to the appliance account.
+
+The home directory currently lives in the volatile root overlay. Files and
+account changes are lost on reboot until persistent userdata is implemented.
 
 ## Security boundary
 

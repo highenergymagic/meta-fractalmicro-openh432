@@ -40,7 +40,9 @@ Runtime configuration remains subject to the image's volatile overlay.
 
 The operator confirmed readable virtual-console output, key entry at the
 login prompt and scroll-key navigation. Routing and broader chord coverage
-remain unqualified. Root's password is locked by default; this service does
-not create accounts, set passwords or enable automatic console login. See the
+remain unqualified. The separate local-console policy automatically logs the
+built-in tty1 console into the unprivileged `user` account. Root remains
+password-locked; BRLTTY itself does not manage authentication. See the
+[runtime policy](runtime.md) for login and storage boundaries, and the
 [hardware interface](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/braille.md)
 for electrical and transport qualification limits.

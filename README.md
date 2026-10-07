@@ -1,84 +1,54 @@
-# meta-fractalmicro-openh432
+# OpenH432 distribution layer
 
-Yocto/OpenEmbedded distribution policy and image composition for OpenH432
-on the H432B BrailleSense U2. This Fractal Microsystems layer supplies
-glibc/systemd userspace, service policy and image-format checks.
-Hardware drivers and device trees belong to
+Yocto/OpenEmbedded distribution policy and image definitions for OpenH432,
+maintained by Fractal Microsystems. This layer supplies glibc/systemd
+userspace, service configuration and image assembly.
+
+Board drivers, device trees and bootloader support are maintained in
 [meta-fractalmicro-H432B](https://github.com/highenergymagic/meta-fractalmicro-H432B).
-
-OpenH432 is a developer preview, not a complete accessible firmware replacement.
 
 ## Build integration
 
-Use the pinned Wrynose composition and Docker workflow in
-[openh432-build](https://github.com/highenergymagic/openh432-build).
-Select `DISTRO = "openh432"` and `MACHINE = "h432b"`.
-That repository supports native Linux x86-64 and ARM64 firmware builders.
-Builds produce artifacts and never deploy them.
+| Setting | Value |
+| --- | --- |
+| Distribution | `openh432` |
+| Supported machine | `h432b` |
+| Yocto series | Wrynose |
+| C library / init | glibc / systemd |
 
-The manifest imports
-[meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets)
-for separately licensed startup/shutdown sounds.
+Use [openh432-build](https://github.com/highenergymagic/openh432-build) for the
+pinned layer composition and build commands. The composition includes
+OpenEmbedded Core, meta-oe, the hardware layer and
+[meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
+The assets layer supplies separately licensed system sounds.
 
 ## Images
 
-| Target | Role |
+| Recipe | Purpose |
 | --- | --- |
-| `openh432-nand-b` | Kernel/DTB/minimal-initramfs bundle for slot B |
-| `openh432-systembase-b` | Separate SquashFS userspace, capped below 200 MiB |
-| `openh432-early-b` | Root-handoff initramfs used by the NAND kernel bundle |
-| `openh432-fastboot-ram` | Runtime kernel with complete standalone RAM root |
-| `openh432-ram-dev` | Quiet glibc/systemd development initramfs |
-| `openh432-hardware-test` | RAM image with explicit sound-test policy |
+| `openh432-nand-b` | Slot-B kernel, device tree and minimal root-handoff initramfs |
+| `openh432-systembase-b` | Separate SquashFS system userspace |
+| `openh432-fastboot-ram` | Standalone RAM environment for recovery and development |
 
-The boot envelope uses an Android header for loader compatibility; the OS is
-not Android. See the [target catalogue](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/targets.md)
-for optional profiles and their prerequisites.
+The NAND kernel mounts the slot-matched systembase and starts systemd.
+Writable runtime state uses a volatile overlay; persistent userdata and
+coordinated A/B updates are not implemented. Additional images and their
+prerequisites are listed in the
+[target catalogue](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/targets.md).
 
-## NAND root and state
+## Configuration and reference
 
-Early userspace attaches the existing UBI pool, checks the slot marker,
-mounts `systembase_b` through ubiblock and starts systemd. A 64 MiB volatile
-overlay supplies writable state. No formatting, repartitioning or image
-replacement occurs during root handoff.
-
-The runtime permits Linux UBI and internal-SD writes while protecting factory
-boot and BBT regions. Credentials, pairing state, assistance cache and other
-overlay changes disappear on reboot. Persistent userdata and coordinated
-A/B activation/rollback are not implemented.
-
-## Services
-
-| Feature | Policy |
-| --- | --- |
-| Ethernet | systemd-networkd DHCP |
-| Wi-Fi | FMWiFi startup with compatible external firmware; private supplicant profile required |
-| Bluetooth | BlueZ packaged; FMBluetoothTransport disabled pending automatic factory initialization |
-| GPS | Local-only gpsd and proxy-backed RAM assistance; [configuration](docs/gps.md) |
-| Sounds | Enabled in NAND systembase, quiet RAM development image; [configuration](docs/system-sounds.md) |
-| SSH | Key-gated maintenance with volatile identity; [configuration](docs/remote-access.md) |
-| Power key | Actions ignored pending qualified shutdown/wake or suspend/resume |
-
-Wi-Fi supports a limited WPA2-Personal/CCMP station profile; see the
-[Wi-Fi reference](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/wifi.md).
-Bluetooth requires manual radio/identity initialization and has no audio backend;
-see the [Bluetooth reference](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/bluetooth.md).
-
-## Deployment and security
+- [Runtime policy](docs/runtime.md): root filesystem, services and state lifetime.
+- [Remote access](docs/remote-access.md): maintenance SSH and credentials.
+- [System sounds](docs/system-sounds.md): packages, playback and volume policy.
+- [GPS service](docs/gps.md): receiver ownership and assistance configuration.
+- [Support matrix](https://github.com/highenergymagic/openh432-build/blob/main/docs/status.md): feature availability and limitations.
+- [Installation](https://github.com/highenergymagic/openh432-tools/blob/main/docs/installation.md): image deployment and recovery prerequisites.
 
 Development images expose an unauthenticated physical USB root console.
-They are not suitable for production or security-sensitive use. Network
-credentials and keys are never built into generic images.
+They are not production images or a complete accessible firmware replacement.
 
-Read the [boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md)
-and [conversion guide](https://github.com/highenergymagic/openh432-tools/blob/main/docs/installation.md).
-The standalone RAM environment can run before a NAND systembase exists;
-it is not a general-purpose installer.
+## Licence
 
-The [support matrix](https://github.com/highenergymagic/openh432-build/blob/main/docs/status.md)
-distinguishes runtime integration from diagnostics and unqualified features.
-
-## License
-
-New metadata and policy files are MIT-licensed. Software and media retain
-their upstream licenses.
+New metadata and policy files are MIT-licensed. Packaged software, firmware
+and media retain their respective upstream licences.

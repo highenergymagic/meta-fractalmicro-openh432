@@ -17,7 +17,8 @@ class RootHandoff(unittest.TestCase):
             self.assertNotIn(word, text)
         self.assertIn('case "$slot" in a|b)', text)
         self.assertIn('"systembase_$slot"', text)
-        self.assertIn('flags & 1024', text)
+        self.assertIn("linux-ubi", text)
+        self.assertNotIn('fail "writable NAND profile"', text)
         self.assertIn("linux-reserved", text)
         for size in ("4194304", "531628032", "131072", "2048"):
             self.assertIn(size, text)
@@ -52,6 +53,7 @@ class RootHandoff(unittest.TestCase):
         self.assertIn("openh432-wired-policy", base)
         self.assertIn('IMAGE_FSTYPES = "squashfs-xz"', base)
         self.assertIn("16760832", bundle)
+        self.assertIn("linux-h432b-runtime:do_deploy", bundle)
         self.assertIn("openh432-early-b-h432b.rootfs.cpio.xz", bundle)
         self.assertNotIn("openh432-ram-dev-h432b.rootfs.cpio.xz", bundle)
 

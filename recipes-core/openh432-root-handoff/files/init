@@ -1,6 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
-# Only read existing NAND/UBI volumes. Never format, update or repair storage.
+# Mount existing static systembase read-only. UBI may maintain writable NAND.
+# Never format, replace images or create volumes during root handoff.
 set -eu
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 fail() {
@@ -16,7 +17,8 @@ case "$slot" in a|b) ;; *) fail "invalid slot" ;; esac
 mtd=
 for node in /sys/class/mtd/mtd[0-9]*; do
     [ -f "$node/name" ] || continue
-    if [ "$(cat "$node/name")" = linux-reserved ]; then
+    name=$(cat "$node/name")
+    if [ "$name" = linux-ubi ] || [ "$name" = linux-reserved ]; then
         [ -z "$mtd" ] || fail "ambiguous NAND pool"
         mtd=${node##*/mtd}
     fi
@@ -26,9 +28,8 @@ done
 [ "$(cat /sys/class/mtd/mtd$mtd/size)" = 531628032 ] || fail "NAND size"
 [ "$(cat /sys/class/mtd/mtd$mtd/erasesize)" = 131072 ] || fail "NAND erase geometry"
 [ "$(cat /sys/class/mtd/mtd$mtd/writesize)" = 2048 ] || fail "NAND page geometry"
-# Runtime kernel must prohibit writes even during UBI attachment.
-flags=$(cat /sys/class/mtd/mtd$mtd/flags)
-[ "$((flags & 1024))" = 0 ] || fail "writable NAND profile"
+# The normal runtime allows UBI wear maintenance. Legacy read-only kernels
+# remain mount-compatible; immutability belongs to the SquashFS root image.
 ubiattach /dev/ubi_ctrl -m "$mtd" || fail "UBI attach"
 ubi=
 for node in /sys/class/ubi/ubi[0-9]*; do

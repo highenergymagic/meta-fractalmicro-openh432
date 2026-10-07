@@ -1,0 +1,23 @@
+[Unit]
+Description=Optional bounded MT3339 RAM assistance before gpsd
+ConditionPathExists=/dev/openh432-gps
+Before=gpsd.service
+
+[Service]
+Type=oneshot
+User=openh432-gps
+Group=openh432-gps
+RuntimeDirectory=openh432-gps
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/libexec/openh432-agps upload
+TimeoutStartSec=80
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+DevicePolicy=closed
+DeviceAllow=/dev/openh432-gps rw

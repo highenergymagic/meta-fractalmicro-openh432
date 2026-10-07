@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh cached GPS assistance without delaying boot
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=6h
+RandomizedDelaySec=5min
+Unit=agps-data-refresh.service
+
+[Install]
+WantedBy=timers.target

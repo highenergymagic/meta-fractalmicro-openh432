@@ -1,0 +1,27 @@
+[Unit]
+Description=OpenH432 local GPS service
+ConditionPathExists=/dev/openh432-gps
+Wants=agps-data-upload.service
+After=agps-data-upload.service
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=openh432-gps
+Group=openh432-gps
+RuntimeDirectory=openh432-gps
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/libexec/openh432-agps gpsd
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+DevicePolicy=closed
+DeviceAllow=/dev/openh432-gps rw

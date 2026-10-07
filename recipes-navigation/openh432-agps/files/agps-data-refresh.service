@@ -1,0 +1,22 @@
+[Unit]
+Description=Refresh OpenH432 EPO cache through privacy proxy
+After=network.target systemd-timesyncd.service
+
+[Service]
+Type=oneshot
+User=openh432-gps
+Group=openh432-gps
+CacheDirectory=openh432-agps
+CacheDirectoryMode=0755
+ExecStart=/usr/libexec/openh432-agps refresh
+TimeoutStartSec=55
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0022

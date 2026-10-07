@@ -39,16 +39,24 @@ NAND-root composition documented below; neither provides persistent userdata.
 
 The optional [system sounds](docs/system-sounds.md) are sourced by
 [meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
-The default development image remains quiet; audio test policy is opt-in.
+The optional RAM diagnostic image remains quiet; the NAND base includes the
+selected boot and shutdown sounds.
 
 ## NAND root composition
 
 The slot-B NAND composition is built with `openh432-nand-b` and
 `openh432-systembase-b`. The kernel bundle contains the kernel, device tree
 and a minimal `openh432-early-b` initramfs, not the complete operating system.
-Early userspace attaches the existing UBI pool read-only, selects
+The runtime kernel permits writes to the Linux UBI pool and internal SD,
+while protecting factory boot and BBT regions. Early userspace attaches the
+existing UBI pool, selects
 `systembase_b`, checks its state and slot marker, mounts SquashFS through
-ubiblock, and switches root to systemd.
+ubiblock read-only, and switches root to systemd. No formatting or image
+replacement is performed during this handoff.
+
+The base includes local-only gpsd, GPS command-line clients, and optional
+proxy-backed RAM assistance; see [GPS service policy](docs/gps.md). Hardware
+support is included in the normal NAND runtime kernel.
 
 The base includes wired DHCP configuration and the selected KDE boot/shutdown
 sounds from
@@ -75,8 +83,10 @@ Builds only produce artifacts. They do not connect to or modify a device.
 **Development images expose an unauthenticated root shell over physical
 USB. They are not suitable for production use.**
 
-Default storage access is protected against writes. Images do not
-automatically partition disks, format filesystems or install firmware.
+The normal NAND runtime enables Linux UBI and internal SD writes while
+protecting factory boot and BBT regions. Historical diagnostic profiles may
+retain read-only guards. Images do not automatically partition disks, format
+filesystems or install firmware.
 Hardware bring-up and accessibility services remain incomplete.
 
 Production and recovery images, persistent system storage, and coordinated

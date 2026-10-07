@@ -28,6 +28,9 @@ for layout and write boundaries.
 | System sounds | Enabled in NAND systembase; quiet RAM development image |
 | SSH | Key-gated maintenance with volatile identity |
 | Power key | Actions ignored pending qualified shutdown/wake or suspend/resume |
+| Keyboard / selectors | Kernel evdev devices; no chord translation, keypad-lock or notification policy |
+| Battery | Kernel read-only power_supply telemetry; no charger or low-battery policy |
+| Vibration | Bounded h432b-vibrator-test command installed; never started automatically |
 
 Configuration references:
 [remote access](remote-access.md), [GPS](gps.md),

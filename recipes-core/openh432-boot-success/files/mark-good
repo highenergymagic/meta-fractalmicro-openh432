@@ -1,0 +1,58 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+set -eu
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export SYSTEMD_PAGER=cat
+slot=
+attempt=
+for arg in $(cat /proc/cmdline); do
+    case "$arg" in
+        rauc.slot=*)
+            [ -z "$slot" ] || exit 1
+            slot=${arg#rauc.slot=}
+            ;;
+        openh432.attempt=*)
+            [ -z "$attempt" ] || exit 1
+            attempt=${arg#openh432.attempt=}
+            ;;
+    esac
+done
+# Legacy/manual boots must never acknowledge a managed attempt.
+[ -n "$slot" ] || exit 0
+case "$slot" in A) root=3; name=a ;; B) root=4; name=b ;; *) exit 1 ;; esac
+case "$attempt" in ''|*[!0-9]*) exit 1 ;; esac
+[ "$(cat /sys/class/ubi/ubi0/mtd_num)" = 1 ]
+[ "$(cat /sys/class/mtd/mtd1/name)" = linux-ubi ]
+[ "$(cat /sys/class/mtd/mtd1/offset)" = 4194304 ]
+[ "$(cat /sys/class/mtd/mtd1/size)" = 531628032 ]
+[ "$(cat /sys/class/ubi/ubi0/eraseblock_size)" = 126976 ]
+[ "$(cat /sys/class/ubi/ubi0_$root/name)" = "systembase_$name" ]
+for pair in 5:a 6:b; do
+    number=${pair%:*}
+    name=${pair#*:}
+    path=/sys/class/ubi/ubi0_$number
+    [ "$(cat "$path/name")" = "bootstate_$name" ]
+    [ "$(cat "$path/type")" = dynamic ]
+    [ "$(cat "$path/reserved_ebs")" = 2 ]
+done
+[ "$(cat /sys/class/ubi/ubi0_$root/corrupted)" = 0 ]
+[ "$(cat /sys/class/ubi/ubi0_$root/upd_marker)" = 0 ]
+awk -v device="/dev/ubiblock0_$root" '
+    $1 == device && $2 == "/.openh432/lower" && $3 == "squashfs" { found=1 }
+    END { exit !found }
+' /proc/mounts
+systemctl is-active --quiet FMBraille.service getty@tty1.service
+[ "$(systemctl show FMBraille.service -p NRestarts --value)" = 0 ]
+[ "$(systemctl show getty@tty1.service -p NRestarts --value)" = 0 ]
+# Verify a usable local session exists, not just an active getty unit.
+found=
+for proc in /proc/[0-9]*; do
+    [ -r "$proc/status" ] || continue
+    uid=$(awk '/^Uid:/ {print $2}' "$proc/status") || continue
+    if [ "$uid" = 1000 ] && [ "$(readlink "$proc/fd/0" || :)" = /dev/tty1 ]; then
+        found=yes
+        break
+    fi
+done
+[ "$found" = yes ]
+exec h432b-bootstate-check --mark-good "$slot" "$attempt"

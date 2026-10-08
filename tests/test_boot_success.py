@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: MIT
+from pathlib import Path
+import subprocess
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+FILES = ROOT / "recipes-core/openh432-boot-success/files"
+
+class BootSuccess(unittest.TestCase):
+    def test_shell_syntax(self):
+        subprocess.run(["sh", "-n", str(FILES / "mark-good")], check=True)
+
+    def test_unmanaged_boot_never_writes(self):
+        script = (FILES / "mark-good").read_text()
+        prefix = "cat() { printf '%s' 'console=ttyS0'; }; export -f cat\n"
+        # POSIX sh does not export functions; sourced script shares this function.
+        prefix = "cat() { printf '%s' 'console=ttyS0'; };\n"
+        result = subprocess.run(["sh", "-c", prefix + script], capture_output=True)
+        self.assertEqual(result.returncode, 0)
+
+    def test_health_and_serial_gate(self):
+        script = (FILES / "mark-good").read_text()
+        for token in ("FMBraille.service", "getty@tty1.service", "NRestarts",
+                      'uid" = 1000', "/dev/tty1", "systembase_$name",
+                      "upd_marker", "corrupted", "--mark-good", '"$attempt"'):
+            self.assertIn(token, script)
+        self.assertNotIn("fw_setenv", script)
+        unit = (FILES / "FMMarkBootSuccessful.service").read_text()
+        self.assertIn("ExecStartPre=/bin/sleep 30", unit)
+        self.assertIn("ConditionKernelCommandLine=rauc.slot", unit)
+        self.assertNotIn("network-online", unit)
+
+    def test_managed_root_slot_parser(self):
+        init = (ROOT / "recipes-core/openh432-root-handoff/files/init").read_text()
+        parser = init[init.index("slot=$(cat"):init.index("mtd=\n")]
+        for args, expected in [
+            ("console=ttyS0", "b"),
+            ("rauc.slot=A", "a"),
+            ("rauc.slot=B", "b"),
+            ("rauc.slot=A rauc.slot=B", None),
+            ("rauc.slot=A rauc.slot=A", None),
+            ("rauc.slot=C", None),
+            ("rauc.slot=", None),
+        ]:
+            prefix = "fail() { exit 1; }; cat() { case \"$1\" in /proc/cmdline) printf '%s' \"" + args + "\" ;; *) echo b ;; esac; };\n"
+            result = subprocess.run(["sh", "-c", prefix + parser + "\nprintf '%s' \"$slot\""],
+                                    capture_output=True, text=True)
+            if expected is None:
+                self.assertNotEqual(result.returncode, 0, args)
+            else:
+                self.assertEqual((result.returncode, result.stdout), (0, expected), args)
+
+if __name__ == "__main__":
+    unittest.main()

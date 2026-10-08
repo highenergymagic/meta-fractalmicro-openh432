@@ -10,7 +10,8 @@ Root handoff does not format, repartition or replace storage images.
 The systembase is limited to less than 200 MiB. A 64 MiB volatile overlay
 provides writable runtime state. Changes to credentials, pairing state,
 assistance caches and other overlay files are lost on reboot. Persistent
-userdata and coordinated A/B activation or rollback are not implemented.
+userdata is not implemented. Managed A/B boots use persistent attempt limits
+and automatic acknowledgement of a healthy local console.
 
 The normal runtime permits Linux UBI maintenance and internal-SD writes.
 Factory boot and bad-block-table regions remain protected.
@@ -26,11 +27,12 @@ for layout and write boundaries.
 | Bluetooth | BlueZ packaged; FMBluetoothTransport disabled pending automatic factory initialization |
 | GPS | Local-only gpsd with proxy-backed RAM assistance |
 | System sounds | Enabled in NAND systembase; quiet RAM development image |
+| Boot success | FMMarkBootSuccessful enabled; acknowledges only a managed, healthy boot attempt |
 | Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
 | SSH | Key-gated maintenance with volatile identity |
 | Power key | Actions ignored pending qualified shutdown/wake or suspend/resume |
 | Braille | FMBraille enabled; internal display, keyboard and routing devices owned by BRLTTY |
-| Keyboard / selectors | Kernel evdev devices; no chord translation, keypad-lock or notification policy |
+| Keyboard / selectors | Kernel evdev devices and BRLTTY chord translation; no keypad-lock or notification policy |
 | Battery | Kernel read-only power_supply telemetry; no charger or low-battery policy |
 | Vibration | Bounded h432b-vibrator-test command installed; never started automatically |
 
@@ -55,6 +57,20 @@ built-in console provides access to the appliance account.
 
 The home directory currently lives in the volatile root overlay. Files and
 account changes are lost on reboot until persistent userdata is implemented.
+
+## Managed A/B boots
+
+The loader supplies one `rauc.slot=A|B` argument and an `openh432.attempt`
+serial. Root handoff mounts the matching systembase. After 30 seconds,
+`FMMarkBootSuccessful.service` checks the mounted root, UBI geometry, BRLTTY,
+tty1 and the local user session. The locked `h432b-bootstate-check` helper
+restores that slot's attempt allowance only if the stored serial still matches.
+Network connectivity is not a health requirement; stale acknowledgements fail.
+
+The argument names are compatible with RAUC conventions, but RAUC and a signed
+bundle installer are not included. A hung kernel has no qualified watchdog
+recovery. See the [boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md)
+for state format, update ordering and maintenance behavior.
 
 ## Security boundary
 

@@ -2,7 +2,9 @@
 
 Yocto/OpenEmbedded distribution policy and image definitions for OpenH432,
 maintained by Fractal Microsystems. This layer supplies glibc/systemd
-userspace, service configuration and image assembly.
+userspace, service configuration and image assembly. The standard NAND image
+starts an interactive BRLTTY console and automatically logs in the local
+appliance account `user`.
 
 Board drivers, device trees and bootloader support are maintained in
 [meta-fractalmicro-H432B](https://github.com/highenergymagic/meta-fractalmicro-H432B).
@@ -26,13 +28,15 @@ The assets layer supplies separately licensed system sounds.
 
 | Recipe | Purpose |
 | --- | --- |
-| `openh432-nand-b` | Slot-B kernel, device tree and minimal root-handoff initramfs |
+| `openh432-nand-b` | Slot-independent kernel bundle and loader-selected root handoff |
 | `openh432-systembase-b` | Separate SquashFS system userspace |
 | `openh432-fastboot-ram` | Standalone RAM environment for recovery and development |
 
 The NAND kernel mounts the slot-matched systembase and starts systemd.
-Writable runtime state uses a volatile overlay; persistent userdata and
-coordinated A/B updates are not implemented. Additional images and their
+The same image pair supports either slot; historical `-b` recipe names remain
+for compatibility. A health-gated service acknowledges successful managed
+boots. Writable runtime state remains volatile; persistent userdata and a
+signed update installer are not implemented. Additional images and their
 prerequisites are listed in the
 [target catalogue](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/targets.md).
 

@@ -6,13 +6,32 @@ set -eu
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 fail() {
     echo "OpenH432 root handoff failed: $*" >/dev/console
-    # Leave diagnostics available, without booting a different slot silently.
+    # A managed failure must not be marked good or mount the opposite slot.
+    # Return to the loader, which owns the persistent attempt budget.
+    if [ -n "${managed:-}" ]; then
+        sleep 2
+        reboot -f
+    fi
+    # Unmanaged diagnostics (or a failed reset) remain available.
     while :; do sleep 3600; done
 }
 mount -t devtmpfs devtmpfs /dev
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
+# The fallback keeps explicit legacy/RAM boot profiles usable during migration.
+# Managed boots carry exactly one loader-selected RAUC slot.
 slot=$(cat /etc/openh432-root-slot)
+managed=
+for arg in $(cat /proc/cmdline); do
+    case "$arg" in
+        rauc.slot=A|rauc.slot=B)
+            [ -z "$managed" ] || fail "duplicate slot"
+            managed=${arg#rauc.slot=}
+            ;;
+        rauc.slot=*) fail "invalid managed slot" ;;
+    esac
+done
+case "$managed" in A) slot=a ;; B) slot=b ;; esac
 case "$slot" in a|b) ;; *) fail "invalid slot" ;; esac
 mtd=
 for node in /sys/class/mtd/mtd[0-9]*; do
@@ -56,7 +75,8 @@ ubiblock --create "/dev/$volume" || fail "ubiblock creation"
 block="/dev/ubiblock${volume#ubi}"
 mkdir -p /lower /writable /newroot
 mount -t squashfs -o ro "$block" /lower || fail "SquashFS mount"
-[ "$(cat /lower/usr/lib/openh432/root-slot)" = "$slot" ] || fail "slot mismatch"
+image_slot=$(cat /lower/usr/lib/openh432/root-slot)
+[ "$image_slot" = any ] || [ "$image_slot" = "$slot" ] || fail "slot mismatch"
 [ -x /lower/sbin/init ] || fail "systemd missing"
 # Writable runtime state is volatile until userdata persistence is implemented.
 mount -t tmpfs -o mode=0755,size=64m tmpfs /writable

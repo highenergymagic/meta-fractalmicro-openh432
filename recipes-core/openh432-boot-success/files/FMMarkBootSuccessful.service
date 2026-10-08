@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Confirm a healthy OpenH432 slot boot
+Requires=FMBraille.service getty@tty1.service
+After=FMBraille.service getty@tty1.service
+ConditionKernelCommandLine=rauc.slot
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 30
+ExecStart=/usr/libexec/openh432/mark-good
+RemainAfterExit=yes
+TimeoutStartSec=120
+NoNewPrivileges=yes
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/run /var/lock
+
+[Install]
+WantedBy=multi-user.target

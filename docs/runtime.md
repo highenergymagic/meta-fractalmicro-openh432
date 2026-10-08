@@ -30,7 +30,7 @@ for layout and write boundaries.
 | Boot success | FMMarkBootSuccessful enabled; acknowledges only a managed, healthy boot attempt |
 | Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
 | SSH | Key-gated maintenance with volatile identity |
-| Power key | Actions ignored pending qualified shutdown/wake or suspend/resume |
+| Power key | systemd-logind deep suspend; power-only wake and braille supply control |
 | Braille | FMBraille enabled; internal display, keyboard and routing devices owned by BRLTTY |
 | Keyboard / selectors | Kernel evdev devices and BRLTTY chord translation; no keypad-lock or notification policy |
 | Battery | Kernel read-only power_supply telemetry; no charger or low-battery policy |
@@ -41,6 +41,24 @@ Configuration references:
 [system sounds](system-sounds.md),
 [Wi-Fi](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/wifi.md)
 and [Bluetooth](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/bluetooth.md).
+
+## Suspend policy
+
+The standard systembase includes `openh432-suspend`. A power-switch press
+requests `mem` suspend with `deep` selected; pressing power again resumes the
+existing session. Short and long presses have the same logind action.
+Other keys and selectors are not wake sources. Idle suspend, lid actions,
+hibernation and hybrid sleep are disabled.
+
+The kernel removes braille-cell drive power during suspend and restores the
+cached frame on wake. No user-space blanking or display-power script is needed.
+USB reconnects after wake, so maintenance clients must reopen their connection.
+
+Core sleep, display power and power-only wake have passed device tests.
+RTC-based sleep-time accounting has passed with network correction stopped.
+Peripheral recovery is not fully qualified;
+see the [power-management reference](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/power-control.md)
+before relying on unattended suspend.
 
 ## Local account
 

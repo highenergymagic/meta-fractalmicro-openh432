@@ -48,6 +48,9 @@ Our MIT integration metadata does not relicense the recordings.
 
 Startup and systemd-reboot shutdown playback have been heard on hardware.
 The normal NAND base includes assets and policy, but NAND-backed startup has
-exhibited underruns. Buffering and startup latency need further qualification.
+exhibited underruns. Playback started after deep-sleep resume has passed, including an audible
+speed/quality check. This test explicitly invoked the startup service; ordinary
+resume does not automatically play a boot cue. Buffering and startup latency
+need further qualification.
 A shutdown cue cannot guarantee electrical poweroff or complete before an
 independent hardware cutoff.

@@ -7,7 +7,10 @@ S = "${UNPACKDIR}"
 inherit allarch systemd
 SYSTEMD_SERVICE:${PN} = "FMBootSound.service FMShutdownSound.service"
 SYSTEMD_AUTO_ENABLE:${PN} = "disable"
-RDEPENDS:${PN} = "systemd alsa-utils-aplay alsa-utils-amixer"
+PACKAGES =+ "${PN}-player"
+FILES:${PN}-player = "${libexecdir}/fm-system-sound"
+RDEPENDS:${PN}-player = "alsa-utils-aplay alsa-utils-amixer"
+RDEPENDS:${PN} = "systemd ${PN}-player"
 do_install() {
     install -d ${D}${systemd_system_unitdir} ${D}${libexecdir}
     install -m 0644 ${UNPACKDIR}/*.service ${D}${systemd_system_unitdir}/

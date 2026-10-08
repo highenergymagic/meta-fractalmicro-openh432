@@ -1,3 +1,3 @@
 # SPDX-License-Identifier: MIT
 # Match the physical UART, never an unstable Linux tty number.
-ACTION=="add", SUBSYSTEM=="tty", KERNEL=="ttySAC*", KERNELS=="e2900400.serial", SYMLINK+="openh432-gps", OWNER="openh432-gps", GROUP="openh432-gps", MODE="0660", TAG+="systemd", ENV{SYSTEMD_WANTS}+="gpsd.service"
+ACTION=="add", SUBSYSTEM=="tty", KERNEL=="ttySAC*", KERNELS=="e2900400.serial", SYMLINK+="openh432-gps", OWNER="openh432-gps", GROUP="openh432-gps", MODE="0660", TAG+="systemd"

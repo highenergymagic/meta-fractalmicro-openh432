@@ -2,10 +2,14 @@
 
 ## Root filesystem and state
 
-The NAND kernel bundle contains only the root-handoff initramfs. Early
+The NAND kernel bundle contains a root-handoff initramfs and startup cue,
+not the full userspace. Early
 userspace attaches the existing UBI pool, checks the slot marker and mounts
 the matching SquashFS systembase through ubiblock before starting systemd.
 Root handoff does not format, repartition or replace storage images.
+The standard systembase uses gzip compression, with a single build compressor
+thread. Its artifact suffix is `.squashfs`; the kernel bundle's handoff
+initramfs remains XZ-compressed. Static-volume CRC verification remains enabled.
 
 The systembase is limited to less than 200 MiB. A 64 MiB volatile overlay
 provides writable runtime state. Changes to credentials, pairing state,
@@ -25,8 +29,8 @@ for layout and write boundaries.
 | Ethernet | systemd-networkd DHCP |
 | Wi-Fi | FMWiFi startup requires extracted radio firmware; station credentials supplied separately |
 | Bluetooth | BlueZ packaged; FMBluetoothTransport disabled pending automatic factory initialization |
-| GPS | Local-only gpsd with proxy-backed RAM assistance |
-| System sounds | Enabled in NAND systembase; quiet RAM development image |
+| GPS | Local-only gpsd with proxy-backed RAM assistance; automatic start after 90 seconds |
+| System sounds | NAND startup cue in root-handoff initramfs, fallback/shutdown in systembase; quiet RAM development image |
 | Boot success | FMMarkBootSuccessful enabled; acknowledges only a managed, healthy boot attempt |
 | Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
 | SSH | Key-gated maintenance with volatile identity |
@@ -79,16 +83,48 @@ account changes are lost on reboot until persistent userdata is implemented.
 ## Managed A/B boots
 
 The loader supplies one `rauc.slot=A|B` argument and an `openh432.attempt`
-serial. Root handoff mounts the matching systembase. After 30 seconds,
-`FMMarkBootSuccessful.service` checks the mounted root, UBI geometry, BRLTTY,
+serial. Root handoff mounts the matching systembase. A timer schedules
+`FMMarkBootSuccessful.service` without blocking the multi-user target. The service still waits 30 seconds after its console dependencies start,
+then checks the mounted root, UBI geometry, BRLTTY,
 tty1 and the local user session. The locked `h432b-bootstate-check` helper
 restores that slot's attempt allowance only if the stored serial still matches.
 Network connectivity is not a health requirement; stale acknowledgements fail.
+
+The packaged `59-openh432-bootstate.rules` excludes UBI volumes named
+`bootstate_a` and `bootstate_b` from generic persistent-storage filesystem
+probing. These contain environment records, not filesystems; a probe's open
+reader can prevent the exclusive UBI update needed for acknowledgment.
+Normal device creation, systemd tagging and probing of other volumes remain
+enabled. Other tools must also avoid holding these volumes open during updates.
+
+`59-openh432-managed-images.rules` also suppresses raw-UBI filesystem discovery
+for the named kernel, recovery and systembase image volumes. The loader and
+root handoff select these explicitly; discovering an inactive static image
+would otherwise trigger a full-volume CRC read. This rule does not suppress
+the selected root's UBI integrity check or affect block-device, MMC or USB
+storage discovery.
 
 The argument names are compatible with RAUC conventions, but RAUC and a signed
 bundle installer are not included. A hung kernel has no qualified watchdog
 recovery. See the [boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md)
 for state format, update ordering and maintenance behavior.
+
+## Device discovery
+
+The standard H432B systembase includes `openh432-udev-policy`. Coldplug
+replays device events without replaying module, bus and driver bookkeeping
+events. The built-in maintenance tty receives an initial add event before the
+bulk pass, so it does not wait behind general device discovery. The bulk pass
+still includes the tty and all other devices; a missing tty does not fail boot.
+All device subsystems remain eligible; device permissions, persistent
+storage links, input properties and subsequent USB/SD hotplug use the normal
+udev rules. Four concurrent workers bound discovery-helper contention on the
+single-core target.
+
+The policy masks `75-probe_mtd.rules`: the board's soldered NAND is not
+SmartMedia. USB storage readers continue to use block-device discovery.
+The policy does not shorten event timeouts, disable udev or suppress device
+initialization. These settings apply only to the H432B machine.
 
 ## Security boundary
 

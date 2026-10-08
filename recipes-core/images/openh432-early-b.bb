@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
-SUMMARY = "Minimal H432B slot-B root handoff initramfs"
+SUMMARY = "H432B root handoff with RAM-resident startup cue"
 LICENSE = "MIT"
 inherit core-image
-IMAGE_INSTALL = "busybox base-files base-passwd openh432-root-handoff"
+IMAGE_INSTALL = "busybox base-files base-passwd openh432-root-handoff openh432-system-sounds-player kde3-sounds-startup"
 IMAGE_FEATURES = ""
 IMAGE_FSTYPES = "cpio.xz"
 IMAGE_LINGUAS = ""
@@ -14,6 +14,7 @@ REPRODUCIBLE_TIMESTAMP_ROOTFS = "${SOURCE_DATE_EPOCH}"
 IMAGE_VERSION_SUFFIX = "-${SOURCE_DATE_EPOCH}"
 ROOTFS_POSTPROCESS_COMMAND += "write_early_slot; "
 write_early_slot() {
-    install -d ${IMAGE_ROOTFS}/etc
+    install -d ${IMAGE_ROOTFS}/etc/openh432
+    touch ${IMAGE_ROOTFS}/etc/openh432/system-sounds.enabled
     printf '%s\n' b > ${IMAGE_ROOTFS}/etc/openh432-root-slot
 }

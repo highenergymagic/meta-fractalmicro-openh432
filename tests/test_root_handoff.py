@@ -32,7 +32,7 @@ class RootHandoff(unittest.TestCase):
         self.assertLess(text.index("mount --move /lower"), text.index("exec switch_root"))
         self.assertIn("size=64m", text)
         self.assertIn("exec switch_root /newroot /sbin/init", text)
-        for fs in ("dev", "proc", "sys"):
+        for fs in ("dev", "proc", "sys", "run"):
             self.assertIn(f"mount --move /{fs} /newroot/{fs}", text)
 
     def test_nand_sound_timeout_is_bounded(self):
@@ -47,11 +47,13 @@ class RootHandoff(unittest.TestCase):
         base = (images / "openh432-systembase-b.bb").read_text()
         bundle = (images / "openh432-nand-b.bb").read_text()
         self.assertNotIn("systemd", early)
-        self.assertNotIn("sounds", early)
+        self.assertIn("openh432-system-sounds-player", early)
+        self.assertIn("kde3-sounds-startup", early)
         self.assertIn("openh432-root-handoff", early)
         self.assertIn("kde3-sounds", base)
         self.assertIn("openh432-wired-policy", base)
-        self.assertIn('IMAGE_FSTYPES = "squashfs-xz"', base)
+        self.assertIn('IMAGE_FSTYPES = "squashfs"', base)
+        self.assertIn('EXTRA_IMAGECMD:squashfs = "-comp gzip -noappend -processors 1"', base)
         self.assertIn("16760832", bundle)
         self.assertIn("linux-h432b-runtime:do_deploy", bundle)
         self.assertIn("openh432-early-b-h432b.rootfs.cpio.xz", bundle)

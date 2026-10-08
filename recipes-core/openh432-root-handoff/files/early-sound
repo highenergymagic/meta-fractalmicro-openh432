@@ -1,0 +1,16 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Best-effort startup cue; never make root handoff depend on sound success.
+set -u
+echo "Early sound start $(cut -d ' ' -f 1 /proc/uptime)"
+if timeout -k 2 20 /usr/libexec/fm-system-sound startup; then
+    touch /run/openh432-startup-sound.done
+    echo "Early sound complete $(cut -d ' ' -f 1 /proc/uptime)"
+else
+    status=$?
+    # This initramfs has a single audio owner. Do not retain a timed-out player.
+    killall aplay 2>/dev/null || true
+    timeout -k 1 2 /usr/libexec/fm-system-sound mute || true
+    echo "Early sound failed: $status"
+    exit "$status"
+fi

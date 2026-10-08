@@ -7,6 +7,27 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = ROOT / "recipes-core/openh432-boot-success/files"
 
 class BootSuccess(unittest.TestCase):
+    def test_environment_volumes_skip_filesystem_probing(self):
+        rule = (FILES / "59-openh432-bootstate.rules").read_text()
+        self.assertIn('SUBSYSTEM=="ubi"', rule)
+        self.assertIn('ATTR{name}=="bootstate_a|bootstate_b"', rule)
+        self.assertIn('ENV{UDEV_DISABLE_PERSISTENT_STORAGE_RULES_FLAG}="1"', rule)
+        self.assertNotIn('OPTIONS+="ignore_device"', rule)
+        recipe = (FILES.parent / "openh432-boot-success_1.0.bb").read_text()
+        self.assertIn("file://59-openh432-bootstate.rules", recipe)
+        self.assertIn("${nonarch_base_libdir}/udev/rules.d/59-openh432-bootstate.rules", recipe)
+
+    def test_managed_images_avoid_discovery_not_integrity_checks(self):
+        rule = (FILES / "59-openh432-managed-images.rules").read_text()
+        self.assertIn('SUBSYSTEM=="ubi"', rule)
+        self.assertIn('ATTR{name}=="kernel_a|kernel_b|recovery|systembase_a|systembase_b"', rule)
+        self.assertIn('ENV{UDEV_DISABLE_PERSISTENT_STORAGE_RULES_FLAG}="1"', rule)
+        self.assertNotIn('SUBSYSTEM=="block"', rule)
+        init = (ROOT / "recipes-core/openh432-root-handoff/files/init").read_text()
+        self.assertIn('ubiblock --create', init)
+        self.assertIn('corrupted', init)
+        self.assertIn('upd_marker', init)
+
     def test_shell_syntax(self):
         subprocess.run(["sh", "-n", str(FILES / "mark-good")], check=True)
 

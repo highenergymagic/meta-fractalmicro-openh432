@@ -18,6 +18,14 @@ fail() {
 mount -t devtmpfs devtmpfs /dev
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
+mkdir -p /run
+mount -t tmpfs -o mode=0755,size=10% tmpfs /run
+# All cue data and executables are RAM-resident. Finish before switch_root.
+early_sound=
+if [ -x /usr/libexec/openh432-early-sound ]; then
+    /usr/libexec/openh432-early-sound >/run/openh432-early-sound.log 2>&1 &
+    early_sound=$!
+fi
 # The fallback keeps explicit legacy/RAM boot profiles usable during migration.
 # Managed boots carry exactly one loader-selected RAUC slot.
 slot=$(cat /etc/openh432-root-slot)
@@ -82,10 +90,14 @@ image_slot=$(cat /lower/usr/lib/openh432/root-slot)
 mount -t tmpfs -o mode=0755,size=64m tmpfs /writable
 mkdir /writable/upper /writable/work
 mount -t overlay overlay -o lowerdir=/lower,upperdir=/writable/upper,workdir=/writable/work /newroot || fail "root overlay"
-mkdir -p /newroot/.openh432/lower /newroot/.openh432/writable /newroot/dev /newroot/proc /newroot/sys
+mkdir -p /newroot/.openh432/lower /newroot/.openh432/writable /newroot/dev /newroot/proc /newroot/sys /newroot/run
 mount --move /lower /newroot/.openh432/lower
 mount --move /writable /newroot/.openh432/writable
 mount --move /dev /newroot/dev
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
+if [ -n "$early_sound" ]; then
+    wait "$early_sound" || echo "Early startup cue failed; userspace may retry" >/dev/console
+fi
+mount --move /run /newroot/run
 exec switch_root /newroot /sbin/init

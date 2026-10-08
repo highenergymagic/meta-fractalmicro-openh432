@@ -15,6 +15,3 @@ NoNewPrivileges=yes
 ProtectHome=read-only
 ProtectSystem=strict
 ReadWritePaths=/run /var/lock
-
-[Install]
-WantedBy=multi-user.target

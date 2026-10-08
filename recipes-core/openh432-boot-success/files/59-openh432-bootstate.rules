@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Redundant environment records are not filesystems. Probing holds a reader
+# which can prevent the exclusive UBI update used to acknowledge boot success.
+# Match volume names, not enumeration-dependent device numbers. Preserve udev's
+# normal device creation and systemd tagging; skip only persistent-storage probes.
+SUBSYSTEM=="ubi", KERNEL=="ubi[0-9]*_[0-9]*", ATTR{name}=="bootstate_a|bootstate_b", ENV{UDEV_DISABLE_PERSISTENT_STORAGE_RULES_FLAG}="1"

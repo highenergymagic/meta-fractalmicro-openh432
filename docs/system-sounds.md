@@ -5,7 +5,8 @@ The `openh432-system-sounds` package supplies `FMBootSound.service` and
 
 | Image | Policy |
 | --- | --- |
-| `openh432-systembase-b` | Assets included; boot/shutdown services enabled |
+| `openh432-early-b` | RAM-resident startup cue during root preparation |
+| `openh432-systembase-b` | Shutdown cue and fallback startup service |
 | `openh432-ram-dev` | Quiet; sound services not selected |
 | `openh432-hardware-test` | Assets and explicit sound-test policy enabled |
 
@@ -24,6 +25,19 @@ Shutdown sound is best-effort; it cannot precede an independent hardware cutoff.
 Live startup playback and shutdown playback during a systemd reboot have
 both been heard and confirmed by the operator. Electrical poweroff is separate.
 Shutdown latency still needs qualification with continuous console capture.
+
+## Early NAND startup
+
+The root-handoff initramfs includes only the startup asset, its source/licence,
+and the shared ALSA player/mixer dependencies. It does not include systemd or
+the full userspace. Playback runs alongside root preparation, with a 20-second
+timeout and bounded cleanup; handoff waits for the helper to finish.
+
+Successful playback creates `/run/openh432-startup-sound.done`. The handoff
+preserves this volatile marker and its diagnostic log across switch-root.
+`FMBootSound.service` skips playback when the marker exists; failure leaves
+the normal userspace fallback available. Neither path changes the volume cap.
+Shutdown playback remains in the systembase.
 
 ## Asset provenance
 
@@ -47,10 +61,15 @@ Our MIT integration metadata does not relicense the recordings.
 ## Validation and limits
 
 Startup and systemd-reboot shutdown playback have been heard on hardware.
-The normal NAND base includes assets and policy, but NAND-backed startup has
-exhibited underruns. Playback started after deep-sleep resume has passed, including an audible
-speed/quality check. This test explicitly invoked the startup service; ordinary
-resume does not automatically play a boot cue. Buffering and startup latency
-need further qualification.
+The initramfs startup path has completed without reported underruns on
+successive normal NAND boots and was confirmed audibly clean. The completion
+marker suppresses duplicate userspace playback. Exact artifact scope and
+measurements are recorded in the
+[hardware validation record](https://github.com/highenergymagic/openh432-build/blob/main/docs/hardware-validation.md).
+These checks do not qualify playback under arbitrary concurrent workloads.
+
+Playback started after deep-sleep resume has also passed, including an audible
+speed/quality check on the preceding image. That test explicitly invoked the
+startup service; ordinary resume does not automatically play a boot cue.
 A shutdown cue cannot guarantee electrical poweroff or complete before an
 independent hardware cutoff.

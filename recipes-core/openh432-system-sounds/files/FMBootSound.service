@@ -5,6 +5,8 @@ After=local-fs.target sound.target
 ConditionPathExists=/etc/openh432/system-sounds.enabled
 ConditionPathExists=/usr/share/openh432/sounds/startup.wav
 
+ConditionPathExists=!/run/openh432-startup-sound.done
+
 [Service]
 Type=oneshot
 ExecStart=-/usr/libexec/fm-system-sound startup

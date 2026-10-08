@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Schedule the OpenH432 boot-health confirmation
+
+[Timer]
+OnActiveSec=1s
+AccuracySec=1s
+Unit=FMMarkBootSuccessful.service
+
+[Install]
+WantedBy=timers.target

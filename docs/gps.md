@@ -10,7 +10,10 @@ the UART and power support supplied by the hardware layer.
 
 A udev rule identifies physical UART1 at `e2900400.serial`, creates
 `/dev/openh432-gps` with access limited to the dedicated `openh432-gps`
-account, and requests `gpsd.service`. Generic gpsd socket activation and
+account. `FMGPSStart.timer` requests `gpsd.service` 90 seconds after boot,
+keeping automatic assistance work out of the early console-startup period.
+An explicit `systemctl start gpsd.service` starts it sooner when required.
+Generic gpsd socket activation and
 gpsdctl hotplug units are masked. The packaged policy must be installed
 alongside gpsd.
 

@@ -7,6 +7,18 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = ROOT / "recipes-core/openh432-boot-success/files"
 
 class BootSuccess(unittest.TestCase):
+    def test_ubi_rules_are_packaged_for_ram_and_nand_images(self):
+        recipe = (FILES.parent / "openh432-boot-success_1.0.bb").read_text()
+        self.assertIn('PACKAGES =+ "${PN}-ubi-rules"', recipe)
+        rules = next(l for l in recipe.splitlines() if l.startswith("FILES:${PN}-ubi-rules"))
+        for name in ("59-openh432-managed-images.rules", "59-openh432-bootstate.rules"):
+            self.assertIn(name, rules)
+        self.assertIn("${PN}-ubi-rules", next(l for l in recipe.splitlines()
+                                              if l.startswith("RDEPENDS:${PN} =")))
+        ram = (ROOT / "recipes-core/images/openh432-ram-dev.bb").read_text()
+        self.assertIn("openh432-boot-success-ubi-rules", ram)
+        self.assertNotIn(" openh432-boot-success ", ram + " ")
+
     def test_environment_volumes_skip_filesystem_probing(self):
         rule = (FILES / "59-openh432-bootstate.rules").read_text()
         self.assertIn('SUBSYSTEM=="ubi"', rule)

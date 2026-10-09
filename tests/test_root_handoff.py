@@ -35,6 +35,27 @@ class RootHandoff(unittest.TestCase):
         for fs in ("dev", "proc", "sys", "run"):
             self.assertIn(f"mount --move /{fs} /newroot/{fs}", text)
 
+    def test_console_messages_are_not_fatal(self):
+        text = INIT.read_text()
+        writes = [line for line in text.splitlines() if ">/dev/console" in line]
+        self.assertEqual(writes, ['    { echo "$*" >/dev/console; } 2>/dev/null || :'])
+        self.assertIn("reboot -f || :", text)
+        # A console that cannot be opened must not end the script under set -eu.
+        start = text.index("console() {")
+        helper = text[start:text.index("}\n", text.index("|| :", start)) + 2]
+        helper = helper.replace("/dev/console", "/nonexistent/console")
+        result = subprocess.run(["sh", "-c", "set -eu\n" + helper + 'console "message"\necho survived'],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "survived\n")
+
+    def test_startup_cue_finishes_before_device_moves(self):
+        text = INIT.read_text()
+        wait = text.index('wait "$early_sound"')
+        for fs in ("dev", "proc", "sys"):
+            self.assertLess(wait, text.index(f"mount --move /{fs} /newroot/{fs}"))
+        self.assertGreater(wait, text.index("mount -t overlay"))
+
     def test_nand_sound_timeout_is_bounded(self):
         policy = (ROOT / "recipes-core/openh432-sound-test-policy/openh432-nand-sound-policy_1.0.bb").read_text()
         self.assertIn("TimeoutStartSec=60s", policy)

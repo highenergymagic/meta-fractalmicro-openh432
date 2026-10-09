@@ -1,0 +1,28 @@
+From: Fractal Microsystems <bsp@fractalmicro.org>
+Subject: [PATCH] hts: preserve EOF in token readers on unsigned-char targets
+
+HTS_fgetc returns int. Storing it in char loses EOF on ARM, whose default
+plain char is unsigned. Keep the int until storing an actual byte.
+
+Upstream-Status: Pending
+
+--- a/src/hts_engine/HTS_misc.c
++++ b/src/hts_engine/HTS_misc.c
+@@ -409,7 +409,7 @@
+ /* HTS_get_token: get token from file pointer (separators are space, tab, and line break) */
+ HTS_Boolean HTS_get_token_from_fp(HTS_File * fp, char *buff)
+ {
+-   char c;
++   int c;
+    size_t i;
+
+    if (fp == NULL || HTS_feof(fp))
+@@ -439,7 +439,7 @@
+ /* HTS_get_token_with_separator: get token from file pointer with specified separator */
+ HTS_Boolean HTS_get_token_from_fp_with_separator(HTS_File * fp, char *buff, char separator)
+ {
+-   char c;
++   int c;
+    size_t i;
+
+    if (fp == NULL || HTS_feof(fp))

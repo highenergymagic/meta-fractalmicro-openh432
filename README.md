@@ -22,7 +22,7 @@ Use [openh432-build](https://github.com/highenergymagic/openh432-build) for the
 pinned layer composition and build commands. The composition includes
 OpenEmbedded Core, meta-oe, the hardware layer and
 [meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
-The assets layer supplies separately licensed system sounds.
+The assets layer supplies separately licensed system sounds and speech data.
 
 ## Images
 
@@ -45,6 +45,8 @@ prerequisites are listed in the
 - [Runtime policy](docs/runtime.md): root filesystem, services and state lifetime.
 - [Braille console](docs/braille.md): internal display, keyboard ownership and local-console integration.
 - [Remote access](docs/remote-access.md): maintenance SSH and credentials.
+- [Offline speech](docs/speech.md): voice packages, local client API and audio policy.
+- [Optional OpenEVV](docs/openevv.md): restricted build inputs and evaluation interface.
 - [System sounds](docs/system-sounds.md): packages, playback and volume policy.
 - [GPS service](docs/gps.md): receiver ownership and assistance configuration.
 - [Support matrix](https://github.com/highenergymagic/openh432-build/blob/main/docs/status.md): feature availability and limitations.

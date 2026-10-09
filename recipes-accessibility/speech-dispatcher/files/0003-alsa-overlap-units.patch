@@ -1,0 +1,20 @@
+From: Fractal Microsystems <bsp@fractalmicro.org>
+Subject: [PATCH] audio: keep ALSA overlap expressed in frames
+
+The rounded-up period count was used as a frame count, reducing the
+requested 20 ms scheduling margin to a handful of frames. Multiply by
+period_size to retain that margin between streamed PCM chunks.
+
+Upstream-Status: Pending
+
+--- a/src/audio/alsa.c
++++ b/src/audio/alsa.c
+@@ -824,7 +824,7 @@ static int alsa_drain_overlap(AudioID * id, AudioTrack track)
+ 	if (2*period_size >= min)
+ 		min2 = 2*period_size;
+ 	else
+-		min2 = (min + period_size - 1) / period_size;
++		min2 = ((min + period_size - 1) / period_size) * period_size;
+
+ 	/* Usually the buffer size will be far enough */
+ 	if (alsa_id->alsa_buffer_size >= min2)

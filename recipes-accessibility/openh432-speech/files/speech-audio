@@ -1,0 +1,22 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+set -eu
+# Mixer controls use the system ALSA configuration, not the speech-only PCM.
+unset ALSA_CONFIG_PATH
+mix() { amixer -q -c OpenH432 cset "name=$1" "$2"; }
+case "${1-}" in
+    enable)
+        mix 'Playback Volume' 255,255
+        mix 'Headphone Playback Volume' 45,45
+        mix 'Speaker Playback Volume' 45,45
+        mix 'Headphone Switch' on,on
+        mix 'Speaker Switch' on,on
+        mix 'Internal Speaker Switch' on
+        ;;
+    mute)
+        mix 'Internal Speaker Switch' off
+        mix 'Headphone Switch' off,off
+        mix 'Speaker Switch' off,off
+        ;;
+    *) exit 2 ;;
+esac

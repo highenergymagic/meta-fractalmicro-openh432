@@ -26,9 +26,18 @@ Python latex-access translator; it does not install their runtime dependencies.
 Contraction, application policy, notification modes and keypad locking are
 not configured. Do not run another raw-GPIO display writer concurrently.
 
+## Speech integration
+
+The optional OpenEVV build profile connects BRLTTY to the local Speech
+Dispatcher service and enables automatic console speech and character
+feedback. The RHVoice profile retains braille-only console access because
+continuous live synthesis is not qualified on this target. Braille remains
+available if the speech service fails; it is not a required dependency.
+See [speech configuration](speech.md) for backend selection and limitations.
+
 ## Privileges and application API
 
-The service currently runs as root for the board device and console access.
+The service runs as root for the board device and console access.
 BrlAPI is restricted to a local Unix socket and root peer authentication,
 under the private `/run/brltty` directory. No TCP listener, shared secret
 or network-accessible braille service is configured.

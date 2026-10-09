@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Fractal Microsystems offline speech
+After=sound.target FMShutdownSound.service
+[Service]
+Type=simple
+User=user
+Group=user
+SupplementaryGroups=audio
+RuntimeDirectory=fm-speech
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+Environment=HOME=/home/user
+Environment=ALSA_CONFIG_PATH=/etc/openh432/speech/asound.conf
+Environment=SPEECHD_ADDRESS=unix_socket:/run/fm-speech/speechd.sock
+ExecStartPre=+/usr/libexec/openh432/speech-audio enable
+ExecStart=/usr/bin/speech-dispatcher -s -t 0 -C /etc/openh432/speech -c unix_socket -S /run/fm-speech/speechd.sock -P /run/fm-speech/speechd.pid -L /run/fm-speech
+ExecStopPost=+/usr/libexec/openh432/speech-audio mute
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+[Install]
+WantedBy=multi-user.target

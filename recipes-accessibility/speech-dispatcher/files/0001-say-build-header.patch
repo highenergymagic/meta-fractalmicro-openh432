@@ -1,0 +1,13 @@
+From: Fractal Microsystems <bsp@fractalmicro.org>
+Subject: [PATCH] say: search the build directory for generated API headers
+
+libspeechd_version.h is generated in the build tree, not the source tree.
+Include both directories to support separate source and build directories.
+
+Upstream-Status: Pending
+
+--- a/src/clients/say/Makefile.am
++++ b/src/clients/say/Makefile.am
+@@ -19,1 +19,1 @@
+-inc_local = -I$(top_srcdir)/include -I$(top_srcdir)/src/api/c
++inc_local = -I$(top_srcdir)/include -I$(top_srcdir)/src/api/c -I$(top_builddir)/src/api/c

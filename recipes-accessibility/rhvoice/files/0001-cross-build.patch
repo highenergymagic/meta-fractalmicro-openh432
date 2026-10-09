@@ -1,0 +1,44 @@
+From: Fractal Microsystems <build@fractalmicro.org>
+Subject: [PATCH] Support pinned distribution cross-builds without helper submodules
+
+Disable optional cache/sanitizer helper submodules and set the
+Speech Dispatcher protocol version explicitly. No network access is needed.
+
+Upstream-Status: Inappropriate [distribution cross-build policy]
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -20,14 +20,15 @@
+ set(customCMakeModulesDir "${CMAKE_SOURCE_DIR}/cmake")
+ set(thirdPartyCMakeModulesDir "${customCMakeModulesDir}/thirdParty")
+ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${customCMakeModulesDir}" "${thirdPartyCMakeModulesDir}/sanitizers/cmake")
+-add_subdirectory("${thirdPartyCMakeModulesDir}/CCache")
+-
+-include(FindPkgConfig)
+-include(GNUInstallDirs)
+-include(CPackComponent)
+-include(Hardening)
+-include(VersionFromGit)
+-find_package(Sanitizers)
++
++
++include(FindPkgConfig)
++include(GNUInstallDirs)
++include(CPackComponent)
++include(Hardening)
++include(VersionFromGit)
++function(add_sanitizers)
++endfunction()
+ getVersionFromGit("RHVOICE" "1.2.2")
+
+ if(${CMAKE_VERSION} VERSION_GREATER "3.12")
+--- a/src/sd_module/CMakeLists.txt
++++ b/src/sd_module/CMakeLists.txt
+@@ -18,6 +18,7 @@
+
+ file(GLOB_RECURSE SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/*.c" "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+ add_executable(sd_rhvoice "${SRCFILES}")
++target_compile_definitions(sd_rhvoice PRIVATE SPD_MAJOR=0 SPD_MINOR=12)
+ target_include_directories(sd_rhvoice PRIVATE "${INCLUDE_DIR}" "${HTS_LABELS_KIT_INCLUDES}" "${SPEECHD_INCLUDE_DIRS}")
+ target_link_libraries(sd_rhvoice "RHVoice_core" "RHVoice_audio" "${SPEECHD_LIBRARIES}" pthread)
+ harden(sd_rhvoice)

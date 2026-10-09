@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 require openh432-base-image.inc
 SUMMARY = "Slot-independent NAND systembase with systemd, networking and system sounds"
-IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-wired-policy openh432-maintenance-ssh gpsd gps-utils openh432-agps openh432-wifi openh432-bluetooth h432b-vibrator-test openh432-braille openh432-local-console openh432-boot-success openh432-suspend openh432-udev-policy"
+IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-wired-policy openh432-maintenance-ssh gpsd gps-utils openh432-agps openh432-wifi openh432-bluetooth h432b-vibrator-test openh432-braille openh432-local-console openh432-boot-success openh432-suspend openh432-udev-policy openh432-speech"
 # Gzip reduces cold executable startup cost on Cortex-A8; keep one compressor thread.
 IMAGE_FSTYPES = "squashfs"
 EXTRA_IMAGECMD:squashfs = "-comp gzip -noappend -processors 1"

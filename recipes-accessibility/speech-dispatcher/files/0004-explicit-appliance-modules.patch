@@ -1,0 +1,39 @@
+From: Fractal Microsystems <bsp@fractalmicro.org>
+Subject: [PATCH] server: omit implicit appliance fallback modules
+
+The BSP explicitly selects its speech backend. The dummy fallback eagerly
+opens ALSA and holds the exclusive PCM before a server-audio module can
+start playback. Do not add unconfigured synthesizers to the appliance.
+
+Upstream-Status: Inappropriate [appliance policy]
+
+--- a/src/server/speechd.c
++++ b/src/server/speechd.c
+@@ -814,26 +814,6 @@ static void speechd_load_configuration(void)
+ 		}
+
+-		/* Try to make sure we have something that can speak (with no user parameter) */
+-		module_add_load_request(
+-				g_strdup("espeak-ng-fallback"),
+-				g_strdup("sd_espeak-ng"),
+-				g_strdup(""),
+-				g_strdup_printf("%s/%s.log",
+-						SpeechdOptions.log_dir,
+-						"espeak-ng-fallback"),
+-				NULL,
+-				NULL);
+-
+-		/* At worse, tell what is happening */
+-		module_add_load_request(
+-				g_strdup("dummy"),
+-				g_strdup("sd_dummy"),
+-				g_strdup(""),
+-				g_strdup_printf("%s/%s.log",
+-						SpeechdOptions.log_dir,
+-						"dummy"),
+-				NULL,
+-				NULL);
++		/* Appliance policy selects its output modules explicitly. */
+ 	} else {
+ 		MSG(1, "Can't open %s", SpeechdOptions.conf_file);
+ 	}

@@ -35,6 +35,7 @@ for layout and write boundaries.
 | Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
 | SSH | Key-gated maintenance with volatile identity |
 | Power key | systemd-logind deep suspend; power-only wake and braille supply control |
+| Speech | FMSpeech enabled; RHVoice/SLT default, optional private OpenEVV profile with BRLTTY speech |
 | Braille | FMBraille enabled; internal display, keyboard and routing devices owned by BRLTTY |
 | Keyboard / selectors | Kernel evdev devices and BRLTTY chord translation; no keypad-lock or notification policy |
 | Battery | Kernel read-only power_supply telemetry; no charger or low-battery policy |
@@ -42,7 +43,7 @@ for layout and write boundaries.
 
 Configuration references:
 [remote access](remote-access.md), [GPS](gps.md),
-[system sounds](system-sounds.md),
+[system sounds](system-sounds.md), [speech](speech.md),
 [Wi-Fi](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/wifi.md)
 and [Bluetooth](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/bluetooth.md).
 
@@ -77,14 +78,14 @@ Root remains password-locked. SSH remains key-only and is not enabled by
 this policy; serial and USB services are unchanged. Physical access to the
 built-in console provides access to the appliance account.
 
-The home directory currently lives in the volatile root overlay. Files and
+The home directory lives in the volatile root overlay. Files and
 account changes are lost on reboot until persistent userdata is implemented.
 
 ## Managed A/B boots
 
 The loader supplies one `rauc.slot=A|B` argument and an `openh432.attempt`
 serial. Root handoff mounts the matching systembase. A timer schedules
-`FMMarkBootSuccessful.service` without blocking the multi-user target. The service still waits 30 seconds after its console dependencies start,
+`FMMarkBootSuccessful.service` without blocking the multi-user target. The service waits 30 seconds after its console dependencies start,
 then checks the mounted root, UBI geometry, BRLTTY,
 tty1 and the local user session. The locked `h432b-bootstate-check` helper
 restores that slot's attempt allowance only if the stored serial still matches.

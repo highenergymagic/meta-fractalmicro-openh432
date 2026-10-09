@@ -1,0 +1,48 @@
+From: Fractal Microsystems <bsp@fractalmicro.org>
+Subject: [PATCH] audio: bound appliance PCM buffering and retain refill margin
+
+Default negotiation selected a 64-frame hardware period and a three-second
+buffer on H432B. Mono-to-stereo rate conversion and scheduling could exceed
+the 20ms overlap. Request a 10ms period, a 200ms buffer, and 80ms refill
+margin. Stop still drops the PCM; this does not defer cancellation.
+
+Upstream-Status: Inappropriate [H432B appliance timing policy]
+
+--- a/src/audio/alsa.c
++++ b/src/audio/alsa.c
+@@ -372,6 +372,8 @@ static int alsa_begin(AudioID * id, AudioTrack track)
+
+ 	snd_pcm_uframes_t period_size;
+ 	unsigned int sr;
++	unsigned int period_us = 10000;
++	unsigned int buffer_us = 200000;
+
+ 	snd_pcm_state_t state;
+
+@@ -519,6 +521,15 @@ static int alsa_begin(AudioID * id, AudioTrack track)
+ 		return -1;
+ 	}
+
++	err = snd_pcm_hw_params_set_period_time_near(alsa_id->alsa_pcm,
++		alsa_id->alsa_hw_params, &period_us, NULL);
++	if (err < 0)
++		return err;
++	err = snd_pcm_hw_params_set_buffer_time_near(alsa_id->alsa_pcm,
++		alsa_id->alsa_hw_params, &buffer_us, NULL);
++	if (err < 0)
++		return err;
++
+ 	MSG(4, "Setting hardware parameters on the ALSA device");
+ 	if ((err =
+ 	     snd_pcm_hw_params(alsa_id->alsa_pcm,
+@@ -805,8 +817,7 @@
+ static int alsa_drain_overlap(AudioID * id, AudioTrack track)
+ {
+-	/* We typically want 20ms overlap: usually about a period size, and
+-	   small enough to be unnoticeable */
+-	unsigned min_ms = 20;
++	/* Allow resampling and scheduler latency on the single-core target. */
++	unsigned min_ms = 80;
+
+ 	spd_alsa_id_t *alsa_id = (spd_alsa_id_t *) id;
+ 	snd_pcm_uframes_t min;

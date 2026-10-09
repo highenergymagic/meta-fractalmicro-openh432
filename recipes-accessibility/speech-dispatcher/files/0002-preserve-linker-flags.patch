@@ -1,0 +1,17 @@
+From: Fractal Microsystems <bsp@fractalmicro.org>
+Subject: [PATCH] modules: preserve configured linker flags
+
+Use AM_LDFLAGS for local additions instead of overriding the distribution's
+LDFLAGS, which include hardening and the required ELF hash style.
+
+Upstream-Status: Pending
+
+--- a/src/modules/Makefile.am
++++ b/src/modules/Makefile.am
+@@ -30,4 +30,4 @@
+-LDFLAGS =
++AM_LDFLAGS =
+
+ if DARWIN_HOST
+-LDFLAGS += -Wl,-U,_module_speak -Wl,-U,_module_speak_sync
++AM_LDFLAGS += -Wl,-U,_module_speak -Wl,-U,_module_speak_sync

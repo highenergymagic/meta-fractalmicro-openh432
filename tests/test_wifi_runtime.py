@@ -17,17 +17,17 @@ class WifiRuntime(unittest.TestCase):
         base = (ROOT / "recipes-core/images/openh432-systembase-b.bb").read_text()
         self.assertIn("openh432-wifi", base)
 
-    def test_ordered_one_shot_initialization(self):
-        stages = ["$found/sample", "$found/power_init",
-                  "$found/firmware_load", "$found/power_ack",
-                  "$found/network_start", "iw reg reload", "iw reg set",
+    def test_runtime_initialization(self):
+        stages = ["$found/initialize", "iw reg reload", "iw reg set",
                   "ip link set wlan0 up"]
         positions = [START.index(stage) for stage in stages]
         self.assertEqual(positions, sorted(positions))
-        self.assertIn('[ "$(cat "$found/result")" = idle ]', START)
-        self.assertIn('check_result firmware_result', START)
-        self.assertIn('check_result power_ack_result', START)
+        for old in ("$found/sample", "$found/power_init",
+                    "$found/firmware_load", "$found/power_ack",
+                    "$found/network_start", "check_result"):
+            self.assertNotIn(old, START)
         self.assertNotIn("iw dev wlan0 scan", START)
+        self.assertNotIn("traffic unsupported", START)
 
     def test_bounded_wait_and_no_credential_policy(self):
         self.assertIn('"$n" -lt 30', START)

@@ -10,7 +10,7 @@ found=
 n=0
 while [ "$n" -lt 30 ]; do
     for p in /sys/bus/sdio/devices/*; do
-        [ -e "$p/network_start" ] || continue
+        [ -e "$p/initialize" ] || continue
         [ "$(cat "$p/vendor")" = 0x024c ] || continue
         [ "$(cat "$p/device")" = 0x8712 ] || continue
         [ -z "$found" ] || { echo "Ambiguous Wi-Fi device" >&2; exit 1; }
@@ -21,23 +21,9 @@ while [ "$n" -lt 30 ]; do
     sleep 1
 done
 [ -n "$found" ] || { echo "Wi-Fi device missing" >&2; exit 1; }
-check_result() {
-    case "$(cat "$found/$1")" in
-        "error=0 cleanup=0 "*) ;;
-        *) echo "Wi-Fi stage failed: $1" >&2; exit 1 ;;
-    esac
-}
-# Initialization is one-shot per device binding. Never replay a partial startup.
-[ "$(cat "$found/result")" = idle ]
-printf '1\n' > "$found/sample"
-check_result result
-printf '1\n' > "$found/power_init"
-check_result power_result
-printf 'full\n' > "$found/firmware_load"
-check_result firmware_result
-printf '1\n' > "$found/power_ack"
-check_result power_ack_result
-printf '1\n' > "$found/network_start"
+# Firmware is available on systembase; the driver owns hardware sequencing.
+# An already initialized device is a no-op, so service restarts are harmless.
+printf '1\n' > "$found/initialize"
 # cfg80211 may have requested the database before the NAND root was mounted.
 iw reg reload
 iw reg set "$country"
@@ -48,4 +34,4 @@ while ! iw reg get | grep -q "^country $country:"; do
     sleep 1
 done
 ip link set wlan0 up
-echo "Wi-Fi passive-scan interface ready; association and data traffic unsupported"
+echo "Wi-Fi station interface ready"

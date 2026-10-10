@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import subprocess
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +28,8 @@ class PowerSoundPolicy(unittest.TestCase):
         self.assertIn("After=local-fs.target sound.target", shutdown)
         self.assertIn("RemainAfterExit=yes", shutdown)
 
-    def run_player(self, mode, *, enabled=True, state="running", fail=False):
+    def run_player(self, mode, *, enabled=True, state="running", fail=False,
+                   card="present"):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "sounds").mkdir()
@@ -39,19 +41,33 @@ class PowerSoundPolicy(unittest.TestCase):
             script = script.replace("/run/fm-system-sound-active", str(root / "active"))
             script = script.replace("/etc/openh432/system-sounds.enabled", str(root / "enabled"))
             script = script.replace("/usr/share/openh432/sounds", str(root / "sounds"))
+            script = script.replace("/proc/asound/OpenH432", str(root / "card"))
+            if card == "present":
+                (root / "card").mkdir()
             (root / "player").write_text(script)
             for cmd, body in {
                 "systemctl": 'echo "$STATE"; exit 1',
-                "amixer": 'echo "mixer $*" >> "$LOG"',
+                "amixer": '[ -e "$CARD" ] || { echo "Invalid card number" >&2; exit 1; }\n'
+                          'echo "mixer $*" >> "$LOG"',
                 "aplay": 'echo "play $*" >> "$LOG"; exit "$FAIL"',
             }.items():
                 path = root / cmd
                 path.write_text("#!/bin/sh\n" + body + "\n")
                 path.chmod(0o755)
             env = dict(os.environ, PATH=str(root) + ":" + os.environ["PATH"],
-                       STATE=state, LOG=str(root / "log"), FAIL="1" if fail else "0")
-            result = subprocess.run(["sh", str(root / "player"), mode], env=env,
-                                    capture_output=True, text=True)
+                       STATE=state, LOG=str(root / "log"), FAIL="1" if fail else "0",
+                       CARD=str(root / "card"))
+            if card == "late":
+                # Register the card while the player is waiting for it.
+                proc = subprocess.Popen(["sh", str(root / "player"), mode], env=env,
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                time.sleep(1)
+                (root / "card").mkdir()
+                out, err = proc.communicate(timeout=10)
+                result = subprocess.CompletedProcess(proc.args, proc.returncode, out, err)
+            else:
+                result = subprocess.run(["sh", str(root / "player"), mode], env=env,
+                                        capture_output=True, text=True)
             log = (root / "log").read_text() if (root / "log").exists() else ""
             self.assertFalse((root / "active").exists())
             return result.returncode, log
@@ -68,6 +84,18 @@ class PowerSoundPolicy(unittest.TestCase):
             self.assertEqual(log.count("play -q"), 1)
             self.assertIn("Speaker Playback Volume 45,45", log)
             self.assertTrue(log.rstrip().endswith("Speaker Switch off,off"))
+
+    def test_waits_for_late_card_registration(self):
+        rc, log = self.run_player("startup", card="late")
+        self.assertEqual(rc, 0)
+        self.assertEqual(log.count("play -q"), 1)
+
+    def test_missing_card_wait_is_bounded(self):
+        start = time.monotonic()
+        rc, log = self.run_player("startup", card="absent")
+        self.assertLess(time.monotonic() - start, 8)
+        self.assertNotEqual(rc, 0)
+        self.assertEqual(log.count("play -q"), 0)
 
     def test_playback_failure_still_mutes(self):
         rc, log = self.run_player("startup", fail=True)

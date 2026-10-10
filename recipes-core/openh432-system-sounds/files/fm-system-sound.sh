@@ -25,6 +25,13 @@ esac
 [ -f /etc/openh432/system-sounds.enabled ] || exit 0
 asset=/usr/share/openh432/sounds/$name.wav
 [ -r "$asset" ] || exit 0
+# The early cue can start before the card registers. Wait at most five seconds.
+card=/proc/asound/OpenH432
+n=0
+while [ ! -e "$card" ] && [ "$n" -lt 50 ]; do
+    sleep 0.1
+    n=$((n + 1))
+done
 # Only opt in after verifying routing, PCM format, sample rate and safe level.
 mkdir "$marker" 2>/dev/null || exit 0
 cleanup() { mute; rmdir "$marker" 2>/dev/null || true; }

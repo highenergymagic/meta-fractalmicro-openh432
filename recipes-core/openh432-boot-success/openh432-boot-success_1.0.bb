@@ -5,7 +5,10 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 SRC_URI = "file://mark-good file://FMMarkBootSuccessful.service file://FMMarkBootSuccessful.timer file://fw_env.config file://59-openh432-bootstate.rules file://59-openh432-managed-images.rules"
 S = "${UNPACKDIR}"
 inherit allarch systemd
-RDEPENDS:${PN} = "h432b-bootstate-check libubootenv-bin openh432-braille openh432-local-console"
+# The UBI probe exclusions are also needed wherever volumes are updated,
+# including the RAM recovery image, so they are a separate package.
+PACKAGES =+ "${PN}-ubi-rules"
+RDEPENDS:${PN} = "h432b-bootstate-check libubootenv-bin openh432-braille openh432-local-console ${PN}-ubi-rules"
 SYSTEMD_SERVICE:${PN} = "FMMarkBootSuccessful.timer"
 SYSTEMD_AUTO_ENABLE = "enable"
 do_install() {
@@ -17,4 +20,5 @@ do_install() {
     install -m 0600 ${UNPACKDIR}/fw_env.config ${D}${sysconfdir}/
 }
 
-FILES:${PN} += "${nonarch_base_libdir}/udev/rules.d/59-openh432-managed-images.rules ${nonarch_base_libdir}/udev/rules.d/59-openh432-bootstate.rules ${systemd_system_unitdir}/FMMarkBootSuccessful.service"
+FILES:${PN}-ubi-rules = "${nonarch_base_libdir}/udev/rules.d/59-openh432-managed-images.rules ${nonarch_base_libdir}/udev/rules.d/59-openh432-bootstate.rules"
+FILES:${PN} += "${systemd_system_unitdir}/FMMarkBootSuccessful.service"

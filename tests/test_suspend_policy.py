@@ -12,10 +12,18 @@ class SuspendPolicy(unittest.TestCase):
         parser.read(FILES / name)
         return parser
 
-    def test_only_power_key_requests_sleep(self):
+    def test_power_key_distinguishes_release_from_hold(self):
         login = self.config("95-h432b-suspend.conf")["Login"]
         self.assertEqual(login["HandlePowerKey"], "suspend")
-        self.assertEqual(login["HandlePowerKeyLongPress"], "suspend")
+        self.assertEqual(login["HandlePowerKeyLongPress"], "poweroff")
+        # Equal actions bypass logind's long-press timer and suspend on keydown,
+        # preventing a held button from ever requesting graceful shutdown.
+        self.assertNotEqual(login["HandlePowerKey"],
+                            login["HandlePowerKeyLongPress"])
+        self.assertNotEqual(login["HandlePowerKeyLongPress"], "ignore")
+
+    def test_other_inputs_do_not_request_power_actions(self):
+        login = self.config("95-h432b-suspend.conf")["Login"]
         for key in ("HandleSuspendKey", "HandleSuspendKeyLongPress",
                     "HandleHibernateKey", "HandleHibernateKeyLongPress",
                     "HandleLidSwitch", "HandleLidSwitchExternalPower",

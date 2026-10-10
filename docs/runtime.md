@@ -49,11 +49,17 @@ and [Bluetooth](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/
 
 ## Suspend policy
 
-The standard systembase includes `openh432-suspend`. A power-switch press
-requests `mem` suspend with `deep` selected; pressing power again resumes the
-existing session. Short and long presses have the same logind action.
+The standard systembase includes `openh432-suspend`. A short power-switch
+press requests `mem` suspend with `deep` selected when the switch is released.
+Pressing power wakes the existing session. Holding power for about five seconds
+while awake requests graceful shutdown instead of suspend. These gestures
+use systemd-logind's duration handling; the short action waits for release.
 Other keys and selectors are not wake sources. Idle suspend, lid actions,
 hibernation and hybrid sleep are disabled.
+
+Graceful shutdown stops services, unmounts filesystems and removes braille-cell
+drive power. It does not electrically switch off the whole board. Press Reset
+to start after shutdown; the power switch resumes suspend, not a halted system.
 
 The kernel removes braille-cell drive power during suspend and restores the
 cached frame on wake. No user-space blanking or display-power script is needed.

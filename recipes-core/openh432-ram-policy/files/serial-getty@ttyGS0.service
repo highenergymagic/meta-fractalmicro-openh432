@@ -1,6 +1,6 @@
 # Physical USB diagnostic console ONLY. Not a production login policy.
 [Unit]
-Description=OpenH432 RAM diagnostic USB shell
+Description=OpenH432 development USB maintenance shell
 Requires=dev-ttyGS0.device
 After=dev-ttyGS0.device systemd-user-sessions.service
 ConditionPathExists=/dev/ttyGS0

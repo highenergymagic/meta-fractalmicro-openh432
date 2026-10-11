@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Accessible power-button countdown
+Requires=systemd-logind.service
+After=systemd-logind.service dev-input-h432b\x2dpower.device dev-input-h432b\x2dbeeper.device
+BindsTo=dev-input-h432b\x2dpower.device dev-input-h432b\x2dbeeper.device
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/openh432-power-key
+Restart=on-failure
+RestartSec=1
+TimeoutStopSec=2
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX
+DevicePolicy=closed
+DeviceAllow=/dev/input/h432b-power r
+DeviceAllow=/dev/input/h432b-beeper rw
+
+[Install]
+WantedBy=multi-user.target

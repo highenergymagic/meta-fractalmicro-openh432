@@ -41,6 +41,17 @@ class SpeechPolicy(unittest.TestCase):
         self.assertIn("--without-espeak --without-espeak-ng", dispatcher)
         self.assertIn("--disable-python", dispatcher)
 
+    def test_system_sound_audio_ownership_order(self):
+        unit = (FILES / "FMSpeech.service").read_text()
+        after = set(" ".join(re.findall(r"^After=(.*)$", unit, re.MULTILINE)).split())
+        # Start speech only after fallback startup playback/mute has completed;
+        # reverse shutdown ordering stops speech before the shutdown cue.
+        self.assertTrue({"FMBootSound.service", "FMShutdownSound.service"} <= after)
+        boot = (ROOT / "recipes-core/openh432-system-sounds/files/FMBootSound.service").read_text()
+        self.assertIn("Type=oneshot", boot)
+        self.assertIn("ExecStopPost=-/usr/libexec/fm-system-sound mute", boot)
+        self.assertIn("ConditionPathExists=!/run/openh432-startup-sound.done", boot)
+
     def test_alsa_conversion_and_volume(self):
         alsa = (FILES / "asound.conf").read_text()
         for setting in ('type plug', 'card OpenH432', 'device 0',

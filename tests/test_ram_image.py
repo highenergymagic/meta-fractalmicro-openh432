@@ -84,7 +84,7 @@ class RamImage(unittest.TestCase):
                 root = Path(folder)
                 self.fixture(root)
                 (root / required).unlink()
-                with self.assertRaisesRegex(RuntimeError, "Missing RAM development"):
+                with self.assertRaisesRegex(RuntimeError, "Missing development runtime"):
                     self.finalize(root)
 
 

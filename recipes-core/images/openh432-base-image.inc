@@ -39,15 +39,15 @@ IMAGE_POSTPROCESS_COMMAND += "check_ram_slot_size; "
 python finalize_ram_root() {
     from pathlib import Path
     root = Path(d.getVar('IMAGE_ROOTFS'))
-    (root / 'etc/fstab').write_text('# OpenH432 RAM development: no persistent mounts\n')
+    (root / 'etc/fstab').write_text('# OpenH432 development runtime: no additional persistent mounts\n')
     (root / 'etc/machine-id').write_text('')
     if (root / 'etc/initrd-release').exists():
-        bb.fatal('RAM development image must not enter systemd initrd switch-root mode')
+        bb.fatal('Development root must not enter systemd initrd switch-root mode')
     for required in ('init', 'usr/lib/os-release', 'usr/bin/systemd-analyze', 'usr/bin/systemd-run',
                      'usr/bin/systemd-repart', 'usr/bin/systemd-sysext',
                      'usr/lib/systemd/systemd-networkd', 'usr/lib/libseccomp.so.2',
                      'usr/lib/libacl.so.1', 'usr/lib/libzstd.so.1'):
         if not (root / required).is_file():
-            bb.fatal('Missing RAM development component: ' + required)
+            bb.fatal('Missing development runtime component: ' + required)
 }
 ROOTFS_POSTPROCESS_COMMAND += "finalize_ram_root; "

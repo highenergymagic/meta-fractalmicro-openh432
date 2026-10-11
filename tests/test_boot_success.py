@@ -63,6 +63,40 @@ class BootSuccess(unittest.TestCase):
         self.assertIn("ConditionKernelCommandLine=rauc.slot", unit)
         self.assertNotIn("network-online", unit)
 
+    def test_each_console_service_must_be_active(self):
+        script = (FILES / "mark-good").read_text()
+        # Execute the service gate with systemctl's actual any-active contract;
+        # the rest of the helper's storage/process checks are independent.
+        gate = script[script.index("systemctl is-active"):
+                      script.index("# Verify a usable local session")]
+        mock = r'''
+systemctl() {
+    action=$1
+    shift
+    case "$action" in
+        is-active)
+            shift # --quiet
+            for unit in "$@"; do
+                case "$unit:$ACTIVE" in
+                    FMBraille.service:both|FMBraille.service:braille|\
+                    getty@tty1.service:both|getty@tty1.service:getty) return 0 ;;
+                esac
+            done
+            return 3 ;;
+        show) printf '0\n' ;; # An inactive unit may have no restarts.
+        *) return 2 ;;
+    esac
+}
+'''
+        for active in ("both", "braille", "getty", "neither"):
+            with self.subTest(active=active):
+                result = subprocess.run(
+                    ["sh", "-c", "set -eu\nACTIVE=" + active + "\n" +
+                     mock + gate + "\nprintf acknowledged"],
+                    capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, active == "both")
+                self.assertEqual(result.stdout, "acknowledged" if active == "both" else "")
+
     def test_managed_root_slot_parser(self):
         init = (ROOT / "recipes-core/openh432-root-handoff/files/init").read_text()
         parser = init[init.index("slot=$(cat"):init.index("mtd=\n")]

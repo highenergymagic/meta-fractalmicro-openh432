@@ -41,7 +41,9 @@ awk -v device="/dev/ubiblock0_$root" '
     $1 == device && $2 == "/.openh432/lower" && $3 == "squashfs" { found=1 }
     END { exit !found }
 ' /proc/mounts
-systemctl is-active --quiet FMBraille.service getty@tty1.service
+# is-active with multiple units succeeds if any unit is active. Require both.
+systemctl is-active --quiet FMBraille.service
+systemctl is-active --quiet getty@tty1.service
 [ "$(systemctl show FMBraille.service -p NRestarts --value)" = 0 ]
 [ "$(systemctl show getty@tty1.service -p NRestarts --value)" = 0 ]
 # Verify a usable local session exists, not just an active getty unit.

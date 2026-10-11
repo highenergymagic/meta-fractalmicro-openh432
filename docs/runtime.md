@@ -34,7 +34,7 @@ for layout and write boundaries.
 | Boot success | FMMarkBootSuccessful enabled; acknowledges only a managed, healthy boot attempt |
 | Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
 | SSH | Key-gated maintenance with volatile identity |
-| Power key | systemd-logind deep suspend; power-only wake and braille supply control |
+| Power key | FMPowerKey tap-to-suspend and audible hold-to-shutdown; logind executes both actions |
 | Speech | FMSpeech enabled; RHVoice/SLT default, optional private OpenEVV profile with BRLTTY speech |
 | Braille | FMBraille enabled; internal display, keyboard and routing devices owned by BRLTTY |
 | Keyboard / selectors | Kernel evdev devices and BRLTTY chord translation; no keypad-lock or notification policy |
@@ -49,17 +49,39 @@ and [Bluetooth](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/
 
 ## Suspend policy
 
-The standard systembase includes `openh432-suspend`. A short power-switch
-press requests `mem` suspend with `deep` selected when the switch is released.
-Pressing power wakes the existing session. Holding power for about five seconds
-while awake requests graceful shutdown instead of suspend. These gestures
-use systemd-logind's duration handling; the short action waits for release.
+The standard systembase includes `openh432-suspend` and `openh432-power-key`.
+`FMPowerKey.service` provides an audible, cancellable hold gesture through
+the hardware PWM beeper. Warning cancellation, the complete shutdown countdown,
+subsequent power-button fresh startup and short-tap suspend/resume have passed
+device tests with braille and speech enabled. Repeated-cycle endurance remains
+unqualified.
+
+| Power-switch gesture while awake | Action |
+| --- | --- |
+| Release before one second | Deep suspend on release |
+| Hold for one, two and three seconds | A 100 ms warning tone at each second |
+| Release during the warning countdown | Cancel; remain awake |
+| Keep holding to four seconds | A one-second confirmation tone; shutdown is committed |
+| Confirmation tone completes at five seconds | Request clean shutdown |
+
+Once the confirmation tone begins, releasing the switch does not cancel the
+committed shutdown. A missed timing deadline cancels the gesture instead of
+skipping the audible warning. The service suppresses the wake-button release
+and does not interpret an already-held button at startup as a new gesture.
+It uses a logind `handle-power-key` inhibitor while active and requests the
+standard logind `Suspend` and `PowerOff` operations. If the service is absent,
+logind retains its short-release suspend and five-second-hold shutdown policy.
+
+Pressing power in suspend restores the existing session.
 Other keys and selectors are not wake sources. Idle suspend, lid actions,
 hibernation and hybrid sleep are disabled.
 
 Graceful shutdown stops services, unmounts filesystems and removes braille-cell
-drive power. It does not electrically switch off the whole board. Press Reset
-to start after shutdown; the power switch resumes suspend, not a halted system.
+drive power. The board's wakeable shutdown path then enters retained-memory
+sleep; the next power press requests a hardware reset and fresh boot, not a
+session resume. This is not electrical battery isolation. Kernels without that
+board handler require Reset to start after shutdown. See the hardware layer's
+[power-management reference](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/power-control.md).
 
 The kernel removes braille-cell drive power during suspend and restores the
 cached frame on wake. No user-space blanking or display-power script is needed.

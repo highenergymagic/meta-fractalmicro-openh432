@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: MIT
 [Unit]
 Description=Fractal Microsystems offline speech
-After=sound.target FMShutdownSound.service
+# An early-cue failure may queue the userspace startup sound. Let its ALSA
+# playback and mute cleanup finish before speech configures the same route.
+After=sound.target FMShutdownSound.service FMBootSound.service
 [Service]
 Type=simple
 User=user

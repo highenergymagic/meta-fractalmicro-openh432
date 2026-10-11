@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Fractal Microsystems wireless regulatory policy
+Before=wpa_supplicant@wlan0.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/default/openh432-wifi
+ExecStart=/usr/libexec/openh432-wifi-regulatory
+RemainAfterExit=yes
+TimeoutStartSec=15
+
+[Install]
+WantedBy=multi-user.target

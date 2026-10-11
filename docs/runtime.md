@@ -27,7 +27,7 @@ for layout and write boundaries.
 | Service or interface | Policy |
 | --- | --- |
 | Ethernet | systemd-networkd DHCP |
-| Wi-Fi | FMWiFi startup requires extracted radio firmware; station credentials supplied separately |
+| Wi-Fi | SDIO module autoload with extracted radio firmware; FMRegulatory sets the country; station credentials supplied separately |
 | Bluetooth | BlueZ packaged; FMBluetoothTransport disabled pending automatic factory initialization |
 | GPS | Local-only gpsd with proxy-backed RAM assistance; automatic start after 90 seconds |
 | System sounds | NAND startup cue in root-handoff initramfs, fallback/shutdown in systembase; quiet RAM development image |

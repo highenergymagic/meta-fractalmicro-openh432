@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
 [Match]
-Name=eth0
 Driver=smsc911x
 
 [Network]
@@ -9,3 +8,7 @@ IPv6AcceptRA=yes
 
 [DHCPv4]
 ClientIdentifier=mac
+UseHostname=no
+
+[DHCPv6]
+UseHostname=no

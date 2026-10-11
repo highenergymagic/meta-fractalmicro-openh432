@@ -2,7 +2,9 @@
 SUMMARY = "H432B root handoff with RAM-resident startup cue"
 LICENSE = "MIT"
 inherit core-image
-IMAGE_INSTALL = "busybox base-files base-passwd openh432-root-handoff openh432-system-sounds-player kde3-sounds-startup"
+# cfg80211 is built in: its first firmware request precedes switch_root.
+# Include the signed database here as well as in the normal wireless runtime.
+IMAGE_INSTALL = "busybox base-files base-passwd openh432-root-handoff openh432-system-sounds-player kde3-sounds-startup wireless-regdb-static"
 IMAGE_FEATURES = ""
 IMAGE_FSTYPES = "cpio.xz"
 IMAGE_LINGUAS = ""

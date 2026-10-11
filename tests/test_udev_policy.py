@@ -7,6 +7,12 @@ POLICY = ROOT / "recipes-core/openh432-udev-policy"
 
 
 class UdevPolicy(unittest.TestCase):
+    def test_udev_can_load_modalias_drivers(self):
+        distro = (ROOT / "conf/distro/openh432.conf").read_text()
+        options = next(line.split('"')[1].split() for line in distro.splitlines()
+                       if line.startswith("PACKAGECONFIG:pn-systemd ="))
+        self.assertIn("kmod", options)
+
     def test_device_coldplug_preserves_all_device_subsystems(self):
         conf = (POLICY / "files/50-openh432-coldplug.conf").read_text()
         commands = [line for line in conf.splitlines() if line.startswith("ExecStart=")]

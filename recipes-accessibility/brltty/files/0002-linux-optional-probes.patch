@@ -1,0 +1,42 @@
+Subject: [PATCH] Linux: treat absent module loader and old VT ioctl as capabilities
+
+Monolithic kernels do not expose the modprobe sysctl. Returning failure still
+lets callers probe built-in interfaces; do not spawn a missing loader in that
+case. Likewise ENOTTY is the expected negotiation result for the VT ioctl
+introduced after the supported 6.12 LTS kernel. Preserve errors for other
+failures and retain the existing VCSA fallback.
+
+Upstream-Status: Pending
+
+diff --git a/Programs/system_linux.c b/Programs/system_linux.c
+--- a/Programs/system_linux.c
++++ b/Programs/system_linux.c
+@@ -935,6 +935,9 @@ installKernelModule (const char *name, unsigned char *status) {
+         }
+ 
+         fclose(stream);
++      } else if (errno == ENOENT) {
++        logMessage(LOG_DEBUG, "kernel module loading unavailable: %s", name);
++        return 0;
+       } else {
+         logMessage(LOG_WARNING, "cannot open %s: %s", path, strerror(errno));
+       }
+diff --git a/Drivers/Screen/Linux/screen.c b/Drivers/Screen/Linux/screen.c
+--- a/Drivers/Screen/Linux/screen.c
++++ b/Drivers/Screen/Linux/screen.c
+@@ -1047,9 +1047,13 @@ readScreenDevice (off_t offset, void *buffer, size_t size) {
+         header.cursor.column = info.csr_col;
+         header.cursor.row = info.csr_row;
+       } else {
+-        if (errno == ENOTTY) useGetConSizeCsrPos = 0;
+-        logSystemError("ioctl[VT_GETCONSIZECSRPOS]");
++        if (errno == ENOTTY) {
++          useGetConSizeCsrPos = 0;
++          logMessage(LOG_DEBUG, "VT_GETCONSIZECSRPOS unavailable; using VCSA");
++        } else {
++          logSystemError("ioctl[VT_GETCONSIZECSRPOS]");
++        }
+       }
+     }
+ 
+     if (useVcsa) {

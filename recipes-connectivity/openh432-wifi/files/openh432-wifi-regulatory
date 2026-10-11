@@ -1,0 +1,15 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+set -eu
+country="${WIFI_COUNTRY:-00}"
+case "$country" in
+    00|[A-Z][A-Z]) ;;
+    *) echo "Invalid Wi-Fi country" >&2; exit 1 ;;
+esac
+iw reg set "$country"
+n=0
+while ! iw reg get | grep -q "^country $country:"; do
+    n=$((n + 1))
+    [ "$n" -lt 10 ] || { echo "Wi-Fi regulatory setup failed" >&2; exit 1; }
+    sleep 1
+done

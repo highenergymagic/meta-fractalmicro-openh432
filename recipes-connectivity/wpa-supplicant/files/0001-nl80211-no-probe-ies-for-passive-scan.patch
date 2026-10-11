@@ -1,0 +1,28 @@
+From: Fractal Microsystems <opensource@fractalmicro.org>
+Subject: [PATCH] nl80211: omit Probe Request IEs for passive scans
+
+A scan without SSIDs is passive and emits no Probe Request frames.
+Supplicant-generated Extended Capabilities still reach scan_common in this
+case. Passing them as NL80211_ATTR_IE unnecessarily rejects a passive scan
+on a wiphy with max_scan_ie_len=0, before its scan callback is invoked.
+
+Only attach Probe Request IEs when probes were requested. Active scans retain
+their supplied IEs and the kernel's length validation; this does not silently
+discard an active scan's requested capabilities or inflate the driver limit.
+
+Upstream-Status: Pending
+Signed-off-by: Fractal Microsystems <opensource@fractalmicro.org>
+
+diff --git a/src/drivers/driver_nl80211_scan.c b/src/drivers/driver_nl80211_scan.c
+--- a/src/drivers/driver_nl80211_scan.c
++++ b/src/drivers/driver_nl80211_scan.c
+@@ -221,7 +221,8 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
+ 		wpa_printf(MSG_DEBUG, "nl80211: Passive scan requested");
+ 	}
+ 
+-	if (params->extra_ies) {
++	/* Passive scans have no Probe Requests to carry these IEs. */
++	if (params->extra_ies && params->num_ssids) {
+ 		wpa_hexdump(MSG_MSGDUMP, "nl80211: Scan extra IEs",
+ 			    params->extra_ies, params->extra_ies_len);
+ 		if (nla_put(msg, NL80211_ATTR_IE, params->extra_ies_len,

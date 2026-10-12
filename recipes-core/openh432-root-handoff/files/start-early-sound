@@ -1,0 +1,36 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Retain a RAM-only player root across switch_root's deletion of the initramfs.
+set -eu
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+[ -f /etc/openh432/system-sounds.enabled ] || exit 0
+root=/run/openh432-early-sound.root
+test ! -e "$root"
+mkdir -p "$root/bin" "$root/usr/bin" "$root/usr/lib" "$root/usr/libexec" \
+    "$root/usr/share/openh432/sounds" "$root/etc/openh432" \
+    "$root/dev" "$root/proc" "$root/run"
+ln -s usr/lib "$root/lib"
+cp -L /bin/busybox "$root/bin/busybox"
+for applet in sh cut touch mkdir rmdir sleep; do
+    ln -s busybox "$root/bin/$applet"
+done
+for program in aplay amixer timeout; do
+    cp -L "$(command -v "$program")" "$root/usr/bin/$program"
+done
+# The minimal initramfs's shared libraries include the dynamic loader and
+# ALSA's dependencies. Preserve SONAME links; never read these from NAND.
+cp -a /usr/lib/*.so* "$root/usr/lib/"
+cp -a /usr/share/alsa "$root/usr/share/"
+cp /usr/share/openh432/sounds/startup.wav "$root/usr/share/openh432/sounds/"
+cp /usr/libexec/fm-system-sound /usr/libexec/openh432-early-sound "$root/usr/libexec/"
+touch "$root/etc/openh432/system-sounds.enabled"
+# Non-recursive binds survive the main mounts moving into the new root.
+mount --bind /dev "$root/dev"
+mount --bind /proc "$root/proc"
+mount --bind /run "$root/run"
+# Acquire before forking so userspace cannot race the worker's first instruction.
+# Descendants retain this descriptor through playback and mixer cleanup.
+exec 9>/run/openh432-early-sound.lock
+flock -x 9
+chroot "$root" /usr/libexec/openh432-early-sound 3>&- 4>&- &
+exec 9>&-

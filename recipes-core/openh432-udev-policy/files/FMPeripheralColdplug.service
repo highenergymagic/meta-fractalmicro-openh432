@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Coldplug remaining appliance peripherals
+Wants=FMAccessibility.target
+After=FMAccessibility.target systemd-udev-trigger.service
+ConditionPathIsReadWrite=/sys
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Retain every device subsystem and all normal hotplug rules. Replaying the
+# essential devices again also covers devices which appeared during early boot.
+ExecStart=udevadm trigger --type=devices --action=add --prioritized-subsystem=block,net,tty,input
+TimeoutStartSec=30s
+
+[Install]
+WantedBy=multi-user.target

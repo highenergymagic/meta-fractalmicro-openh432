@@ -15,8 +15,10 @@ XZ_THREADS = "1"
 REPRODUCIBLE_TIMESTAMP_ROOTFS = "${SOURCE_DATE_EPOCH}"
 IMAGE_VERSION_SUFFIX = "-${SOURCE_DATE_EPOCH}"
 ROOTFS_POSTPROCESS_COMMAND += "write_early_slot; "
+do_rootfs[depends] += "openh432-systembase-b:do_image_complete"
 write_early_slot() {
     install -d ${IMAGE_ROOTFS}/etc/openh432
     touch ${IMAGE_ROOTFS}/etc/openh432/system-sounds.enabled
     printf '%s\n' b > ${IMAGE_ROOTFS}/etc/openh432-root-slot
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/openh432-systembase-b-h432b.rootfs.verity ${IMAGE_ROOTFS}/etc/openh432/systembase.verity
 }

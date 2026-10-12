@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Release the early startup audio environment
+After=FMEarlySound.service FMAccessibility.target
+ConditionPathExists=/run/openh432-early-sound.root
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/openh432-finish-early-sound
+TimeoutStartSec=35s

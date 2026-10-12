@@ -1,0 +1,34 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Independent physical USB recovery; no systembase, udev or systemd required.
+set -eu
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+printf '%s\n' "$*" >/run/openh432-handoff-error
+dmesg >/run/openh432-handoff-dmesg.log || :
+configured() {
+    for udc in /sys/class/udc/*; do
+        [ -f "$udc/state" ] || continue
+        [ "$(cat "$udc/state")" = configured ] && return 0
+    done
+    return 1
+}
+# g_serial and the board UDC driver are built into the kernel. Their gadget
+# enumerates independently of root handoff; reuse its ACM port, not a second
+# gadget competing for the same UDC. Allow a host time to enumerate it.
+remaining=10
+while ! configured || [ ! -c /dev/ttyGS0 ]; do
+    [ "$remaining" -gt 0 ] || exit 0
+    sleep 1
+    remaining=$((remaining - 1))
+done
+# An attached host gets a recovery shell instead of an automatic reboot loop.
+# Exiting the shell returns to the loader's existing A/B fallback policy.
+# No boot-success acknowledgement or persistent storage writes occur here.
+export PS1='/ # '
+setsid -c /bin/sh -c '
+    stty sane -echo
+    printf "\nOpenH432 initramfs recovery\nRoot handoff failed: "
+    cat /run/openh432-handoff-error
+    printf "Diagnostics: /run/openh432-handoff.log and /run/openh432-handoff-dmesg.log\nExit this shell to continue A/B fallback.\n"
+    exec /bin/sh -i
+' </dev/ttyGS0 >/dev/ttyGS0 2>&1

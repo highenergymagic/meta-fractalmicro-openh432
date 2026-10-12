@@ -4,7 +4,10 @@ Description=Fractal Microsystems internal braille console
 After=systemd-udev-trigger.service
 ConditionPathExists=/dev/h432b-braille
 [Service]
-Type=simple
+Type=notify
+NotifyAccess=main
+# Failed accessibility startup must not indefinitely block maintenance networking.
+TimeoutStartSec=30s
 ExecStart=/usr/bin/brltty -n -e -f /etc/brltty.conf
 RuntimeDirectory=brltty
 RuntimeDirectoryMode=0700

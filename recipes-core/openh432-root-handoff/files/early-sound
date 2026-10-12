@@ -8,8 +8,8 @@ if timeout -k 2 20 /usr/libexec/fm-system-sound startup; then
     echo "Early sound complete $(cut -d ' ' -f 1 /proc/uptime)"
 else
     status=$?
-    # This initramfs has a single audio owner. Do not retain a timed-out player.
-    killall aplay 2>/dev/null || true
+    # timeout terminates its process group, including the player. Never kill
+    # unrelated players that may now exist in the main userspace.
     timeout -k 1 2 /usr/libexec/fm-system-sound mute || true
     echo "Early sound failed: $status"
     exit "$status"

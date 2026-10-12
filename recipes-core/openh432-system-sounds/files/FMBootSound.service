@@ -2,6 +2,8 @@
 [Unit]
 Description=Fractal Microsystems startup sound
 After=local-fs.target sound.target
+Requires=FMEarlySound.service
+After=FMEarlySound.service
 ConditionPathExists=/etc/openh432/system-sounds.enabled
 ConditionPathExists=/usr/share/openh432/sounds/startup.wav
 

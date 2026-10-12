@@ -13,6 +13,7 @@ S = "${UNPACKDIR}"
 inherit allarch systemd
 RDEPENDS:${PN} = "speech-dispatcher openh432-local-console alsa-utils-amixer ${@'openevv' if d.getVar('OPENH432_SPEECH_BACKEND') == 'openevv' else 'rhvoice rhvoice-slt'}"
 SYSTEMD_SERVICE:${PN} = "FMSpeech.service"
+RDEPENDS:${PN} += "openh432-system-sounds"
 SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 do_install() {
     install -d ${D}${systemd_system_unitdir} ${D}${sysconfdir}/openh432/speech \

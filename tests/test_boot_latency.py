@@ -18,18 +18,18 @@ class BootLatency(unittest.TestCase):
         self.assertIn("WantedBy=timers.target", timer)
         self.assertNotIn("After=multi-user.target", timer)
 
-    def test_early_audio_is_bounded_and_handoff_waits(self):
+    def test_early_audio_is_bounded_and_handoff_does_not_wait(self):
         files = ROOT / "recipes-core/openh432-root-handoff/files"
         script = (files / "early-sound").read_text()
         subprocess.run(["sh", "-n", str(files / "early-sound")], check=True)
         self.assertIn("timeout -k 2 20", script)
         recipe = (files.parent / "openh432-root-handoff_1.0.bb").read_text()
         self.assertIn("coreutils", recipe)
-        self.assertIn("killall aplay", script)
+        self.assertNotIn("killall aplay", script)
         self.assertIn("startup-sound.done", script)
         init = (files / "init").read_text()
-        self.assertLess(init.index('wait "$early_sound"'), init.index("exec switch_root"))
-        self.assertLess(init.index("openh432-early-sound"), init.index("ubiattach"))
+        self.assertNotIn('wait "$early_sound"', init)
+        self.assertLess(init.index("openh432-start-early-sound"), init.index("ubiattach"))
         service = (ROOT / "recipes-core/openh432-system-sounds/files/FMBootSound.service").read_text()
         self.assertIn("ConditionPathExists=!/run/openh432-startup-sound.done", service)
 
@@ -71,5 +71,5 @@ class BootLatency(unittest.TestCase):
                 self.assertEqual(result.returncode, status)
                 self.assertEqual((root / "done").exists(), status == 0)
                 log = (root / "log").read_text()
-                self.assertEqual("killall aplay" in log, status != 0)
+                self.assertNotIn("killall aplay", log)
                 self.assertEqual("player mute" in log, status != 0)

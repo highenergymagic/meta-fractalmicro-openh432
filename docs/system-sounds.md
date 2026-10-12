@@ -30,14 +30,32 @@ Shutdown latency still needs qualification with continuous console capture.
 
 The root-handoff initramfs includes only the startup asset, its source/licence,
 and the shared ALSA player/mixer dependencies. It does not include systemd or
-the full userspace. Playback runs alongside root preparation, with a 20-second
-timeout and bounded cleanup; handoff waits for the helper to finish.
+the full userspace. Playback runs alongside root preparation and systemd
+startup, with a 20-second timeout and bounded cleanup. Root handoff does not
+wait for playback.
+
+The player runs in a private RAM-backed root under
+`/run/openh432-early-sound.root`, with its binaries, shared libraries and ALSA
+configuration. Non-recursive device, proc and runtime-state bind mounts keep
+it independent of the deleted initramfs after `switch_root`.
+`FMEarlySound.service` skips its completion check when successful playback has
+already written the completion marker. Otherwise it waits on the worker's
+inherited file lock. Only the
+fallback startup sound and speech require this completion fence.
+`FMEarlySoundCleanup.service` releases the bind mounts and RAM files after
+the accessibility target, keeping cleanup off the speech startup path.
+A lock timeout fails the audio dependencies
+rather than allowing concurrent mixer changes; it does not block root handoff.
 
 Successful playback creates `/run/openh432-startup-sound.done`. The handoff
 preserves this volatile marker and its diagnostic log across switch-root.
 `FMBootSound.service` skips playback when the marker exists; failure leaves
 the normal userspace fallback available. Neither path changes the volume cap.
 Shutdown playback remains in the systembase.
+
+Inspect `/run/openh432-early-sound.log` for playback start/completion and
+`/run/openh432-handoff.log` for verity, filesystem-mount and root-switch timing.
+These use seconds since Linux entry, not total power-on time.
 
 ## Asset provenance
 

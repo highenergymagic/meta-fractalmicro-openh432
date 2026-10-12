@@ -29,7 +29,7 @@ The assets layer supplies separately licensed system sounds and speech data.
 | Recipe | Purpose |
 | --- | --- |
 | `openh432-nand-b` | Slot-independent kernel bundle and loader-selected root handoff |
-| `openh432-systembase-b` | Separate SquashFS system userspace |
+| `openh432-systembase-b` | Separate SquashFS system userspace with dm-verity integrity |
 | `openh432-fastboot-ram` | Standalone RAM environment for recovery and development |
 
 The NAND kernel mounts the slot-matched systembase and starts systemd.
@@ -43,6 +43,7 @@ prerequisites are listed in the
 ## Configuration and reference
 
 - [Runtime policy](docs/runtime.md): root filesystem, services and state lifetime.
+- [Systembase integrity](docs/verity.md): image pairing, verification and initramfs recovery.
 - [Braille console](docs/braille.md): internal display, keyboard ownership and local-console integration.
 - [Remote access](docs/remote-access.md): maintenance SSH and credentials.
 - [Offline speech](docs/speech.md): voice packages, local client API and audio policy.

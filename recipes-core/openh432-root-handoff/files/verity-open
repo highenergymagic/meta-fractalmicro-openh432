@@ -1,0 +1,30 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Descriptor is part of the matching kernel/initramfs, never sourced as code.
+set -eu
+test "$#" = 2
+volume=$1
+block=$2
+read -r version blocks offset root salt bytes extra < /etc/openh432/systembase.verity
+[ "$version" = 1 ] && [ -z "$extra" ]
+for number in "$blocks" "$offset" "$bytes"; do
+    case "$number" in ''|*[!0-9]*) exit 1 ;; esac
+    [ "${#number}" -le 9 ]
+done
+[ "$blocks" -gt 0 ] && [ "$offset" = "$blocks" ]
+[ "$blocks" -le 51200 ]
+[ "$bytes" -le 209715200 ] && [ "$bytes" -gt "$((blocks * 4096))" ]
+[ "$((bytes % 4096))" = 0 ]
+for hash in "$root" "$salt"; do
+    [ "${#hash}" = 64 ]
+    case "$hash" in *[!0-9a-f]*) exit 1 ;; esac
+done
+[ "$(cat /sys/class/ubi/$volume/data_bytes)" = "$bytes" ]
+[ -b "$block" ]
+# Default verity error policy returns EIO, never unverified data.
+dmsetup --noudevsync create systembase --readonly --table \
+    "0 $((blocks * 8)) verity 1 $block $block 4096 4096 $blocks $offset sha256 $root $salt"
+# The udev-enabled libdevmapper build does not create the mapper link during
+# create when udev is absent. Explicitly reconcile nodes in the initramfs.
+dmsetup mknodes systembase
+test -b /dev/mapper/systembase

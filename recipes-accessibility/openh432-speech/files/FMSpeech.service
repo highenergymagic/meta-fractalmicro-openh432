@@ -4,6 +4,8 @@ Description=Fractal Microsystems offline speech
 # An early-cue failure may queue the userspace startup sound. Let its ALSA
 # playback and mute cleanup finish before speech configures the same route.
 After=sound.target FMShutdownSound.service FMBootSound.service
+Requires=FMEarlySound.service
+After=FMEarlySound.service
 [Service]
 Type=simple
 User=user

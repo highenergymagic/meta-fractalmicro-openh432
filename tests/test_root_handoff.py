@@ -49,12 +49,13 @@ class RootHandoff(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "survived\n")
 
-    def test_startup_cue_finishes_before_device_moves(self):
+    def test_startup_cue_survives_device_moves(self):
         text = INIT.read_text()
-        wait = text.index('wait "$early_sound"')
-        for fs in ("dev", "proc", "sys"):
-            self.assertLess(wait, text.index(f"mount --move /{fs} /newroot/{fs}"))
-        self.assertGreater(wait, text.index("mount -t overlay"))
+        self.assertNotIn('wait "$early_sound"', text)
+        start = (INIT.parent / 'start-early-sound').read_text()
+        for fs in ("dev", "proc", "run"):
+            self.assertIn(f'mount --bind /{fs} "$root/{fs}"', start)
+        self.assertIn('chroot "$root"', start)
 
     def test_nand_sound_timeout_is_bounded(self):
         policy = (ROOT / "recipes-core/openh432-sound-test-policy/openh432-nand-sound-policy_1.0.bb").read_text()

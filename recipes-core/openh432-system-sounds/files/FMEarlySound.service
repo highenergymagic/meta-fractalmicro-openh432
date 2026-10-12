@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Wait for early startup audio completion
+ConditionPathExists=/run/openh432-early-sound.root
+ConditionPathExists=!/run/openh432-startup-sound.done
+Wants=FMEarlySoundCleanup.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -x -w 30 /run/openh432-early-sound.lock /bin/true
+TimeoutStartSec=35s
+RemainAfterExit=yes

@@ -8,7 +8,7 @@ inherit allarch systemd
 # The UBI probe exclusions are also needed wherever volumes are updated,
 # including the RAM recovery image, so they are a separate package.
 PACKAGES =+ "${PN}-ubi-rules"
-RDEPENDS:${PN} = "h432b-bootstate-check libubootenv-bin openh432-braille openh432-local-console ${PN}-ubi-rules"
+RDEPENDS:${PN} = "h432b-bootstate-check libubootenv-bin libdevmapper openh432-braille openh432-local-console ${PN}-ubi-rules"
 SYSTEMD_SERVICE:${PN} = "FMMarkBootSuccessful.timer"
 SYSTEMD_AUTO_ENABLE = "enable"
 do_install() {

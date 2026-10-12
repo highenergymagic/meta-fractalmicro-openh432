@@ -1,0 +1,19 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Only audio consumers depend on this fence; root handoff never waits here.
+set -eu
+root=/run/openh432-early-sound.root
+[ -e "$root" ] || exit 0
+test ! -L "$root"
+test "$(readlink -f "$root")" = "$root"
+exec 9>/run/openh432-early-sound.lock
+# The worker has a 20-second deadline plus bounded termination/mute cleanup.
+# A stuck worker fails this unit rather than letting speech race its mixer.
+flock -x -w 30 9
+for directory in run proc dev; do
+    if mountpoint -q "$root/$directory"; then
+        umount "$root/$directory"
+    fi
+done
+# All binds are removed and the worker has exited; only private RAM files remain.
+rm -r -- "$root"

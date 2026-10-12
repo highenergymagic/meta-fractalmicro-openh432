@@ -5,11 +5,14 @@
 The NAND kernel bundle contains a root-handoff initramfs and startup cue,
 not the full userspace. Early
 userspace attaches the existing UBI pool, checks the slot marker and mounts
-the matching SquashFS systembase through ubiblock before starting systemd.
+the matching SquashFS systembase through ubiblock and dm-verity before starting systemd.
 Root handoff does not format, repartition or replace storage images.
 The standard systembase uses gzip compression, with a single build compressor
-thread. Its artifact suffix is `.squashfs`; the kernel bundle's handoff
-initramfs remains XZ-compressed. Static-volume CRC verification remains enabled.
+thread. The deployable artifact suffix is `.squashfs.verity`; the kernel bundle's
+handoff initramfs remains XZ-compressed and contains the expected root hash.
+Systembase volumes skip UBI's upfront CRC scan in favor of read-time verity
+checks; NAND ECC and post-update verification remain enabled. See
+[systembase integrity](verity.md) for the format, migration and failure policy.
 
 The systembase is limited to less than 200 MiB. A 64 MiB volatile overlay
 provides writable runtime state. Changes to credentials, pairing state,
@@ -30,7 +33,7 @@ for layout and write boundaries.
 | Wi-Fi | SDIO module autoload with extracted radio firmware; FMRegulatory sets the country; station credentials supplied separately |
 | Bluetooth | BlueZ packaged; FMBluetoothTransport disabled pending automatic factory initialization |
 | GPS | Local-only gpsd with proxy-backed RAM assistance; automatic start after 90 seconds |
-| System sounds | NAND startup cue in root-handoff initramfs, fallback/shutdown in systembase; quiet RAM development image |
+| System sounds | Asynchronous RAM-resident NAND startup cue; fallback/shutdown in systembase; quiet RAM development image |
 | Boot success | FMMarkBootSuccessful enabled; acknowledges only a managed, healthy boot attempt |
 | Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
 | SSH | Key-gated maintenance with volatile identity |
@@ -145,15 +148,24 @@ for state format, update ordering and maintenance behavior.
 
 ## Device discovery
 
-The standard H432B systembase includes `openh432-udev-policy`. Coldplug
-replays device events without replaying module, bus and driver bookkeeping
-events. The built-in maintenance tty receives an initial add event before the
-bulk pass, so it does not wait behind general device discovery. The bulk pass
-still includes the tty and all other devices; a missing tty does not fail boot.
-All device subsystems remain eligible; device permissions, persistent
-storage links, input properties and subsequent USB/SD hotplug use the normal
-udev rules. Four concurrent workers bound discovery-helper contention on the
-single-core target.
+The standard H432B systembase includes `openh432-udev-policy`. Boot prioritizes
+the local console: input, sound and miscellaneous character devices receive
+their initial udev events before system initialization completes. The built-in
+maintenance tty also receives an early event; its absence does not fail boot.
+The local autologin starts without waiting for unrelated jobs to become idle.
+
+`FMAccessibility.target` orders the remaining peripheral coldplug pass,
+network management and Wi-Fi setup after the local getty and BRLTTY startup.
+BRLTTY uses its native systemd readiness notification, with a 30-second startup
+timeout. The target uses weak dependencies so an accessibility failure does not
+prevent networking from starting for maintenance. Reaching the target indicates
+that startup attempts have completed, not that the hardware passed qualification.
+
+`FMPeripheralColdplug.service` replays all device events, including the early
+devices, without replaying module, bus and driver bookkeeping events. Device
+permissions, persistent storage links, input properties and subsequent USB/SD
+hotplug retain their normal udev rules. Four concurrent workers bound
+discovery-helper contention on the single-core target.
 
 The policy masks `75-probe_mtd.rules`: the board's soldered NAND is not
 SmartMedia. USB storage readers continue to use block-device discovery.

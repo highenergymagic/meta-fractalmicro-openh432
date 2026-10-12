@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: MIT
 require openh432-boot-image.inc
 SUMMARY = "NAND slot-B kernel bundle with minimal root handoff"
+DEPENDS += "dtc-native"
 do_compile[depends] = "linux-h432b-runtime:do_deploy openh432-early-b:do_image_complete"
 do_compile() {
     rm -f ${B}/openh432-nand-b.img
     python3 ${UNPACKDIR}/make-boot-image.py \
+        --slot-metadata --fdtput ${STAGING_BINDIR_NATIVE}/fdtput \
         --kernel ${DEPLOY_DIR_IMAGE}/kernel-runtime/zImage \
         --dtb ${DEPLOY_DIR_IMAGE}/kernel-runtime/s5pv210-hims-u2-runtime.dtb \
         --ramdisk ${DEPLOY_DIR_IMAGE}/openh432-early-b-h432b.rootfs.cpio.xz \

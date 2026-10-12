@@ -8,12 +8,67 @@ CRC32/SHA1 here identify transfers; they are not authentication/signatures.
 """
 import argparse
 import hashlib
+import lzma
 from pathlib import Path
+import re
 import struct
+import subprocess
+import tempfile
 import zlib
 
 PAGE = 2048
 LIMIT = 32 << 20
+
+
+def root_descriptor(ramdisk):
+    """Read exactly one regular descriptor from the standard XZ/newc handoff."""
+    decoder = lzma.LZMADecompressor(memlimit=128 << 20)
+    archive = decoder.decompress(ramdisk, max_length=64 << 20)
+    if not decoder.eof or decoder.unused_data:
+        raise ValueError("Unbounded or trailing initramfs stream")
+    offset, descriptor = 0, None
+    while offset + 110 <= len(archive):
+        header = archive[offset:offset + 110]
+        if header[:6] != b'070701':
+            raise ValueError("Expected newc initramfs")
+        mode, size, names = (int(header[a:b], 16) for a, b in
+                             ((14, 22), (54, 62), (94, 102)))
+        if not 1 <= names <= len(archive) - offset - 110:
+            raise ValueError("Invalid archive name length")
+        name = archive[offset + 110:offset + 110 + names]
+        if name[-1:] != b'\0' or b'\0' in name[:-1]:
+            raise ValueError("Invalid archive name")
+        name = name[:-1].removeprefix(b'./')
+        offset += (110 + names + 3) & ~3
+        end = offset + ((size + 3) & ~3)
+        if end > len(archive):
+            raise ValueError("Truncated archive entry")
+        if name == b'TRAILER!!!':
+            if size or descriptor is None or any(archive[end:]):
+                raise ValueError("Missing descriptor or trailing archive data")
+            return descriptor
+        if name == b'etc/openh432/systembase.verity':
+            if descriptor is not None or mode & 0o170000 != 0o100000:
+                raise ValueError("Duplicate or non-regular root descriptor")
+            descriptor = archive[offset:offset + size]
+            if not re.fullmatch(rb'1 [0-9]{1,5} [0-9]{1,5} [0-9a-f]{64} [0-9a-f]{64} [0-9]{1,9}\n', descriptor):
+                raise ValueError("Invalid root descriptor")
+            _, blocks, start, _, _, total = descriptor.split()
+            if not 2 <= int(blocks) <= 51200 or blocks != start or not 0 < int(total) <= 200 << 20:
+                raise ValueError("Root descriptor geometry out of bounds")
+        offset = end
+    raise ValueError("Missing archive trailer")
+
+
+def slot_metadata(dtb, ramdisk, fdtput='fdtput'):
+    """Copy the initramfs descriptor into the DTB for loader pair validation."""
+    descriptor = root_descriptor(ramdisk).decode('ascii')
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / 'board.dtb'
+        path.write_bytes(dtb)
+        subprocess.run([fdtput, '-t', 's', str(path), '/chosen',
+                        'fractalmicro,systembase-verity-v1', descriptor], check=True)
+        return path.read_bytes()
 
 
 def image(kernel, ramdisk, dtb):
@@ -49,10 +104,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("kernel", "ramdisk", "dtb", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument('--slot-metadata', action='store_true')
+    parser.add_argument('--fdtput', default='fdtput')
     args = parser.parse_args()
     # Exclusive creation avoids accidentally replacing an earlier artifact.
-    data = image(args.kernel.read_bytes(), args.ramdisk.read_bytes(),
-                 args.dtb.read_bytes())
+    ramdisk, dtb = args.ramdisk.read_bytes(), args.dtb.read_bytes()
+    if args.slot_metadata:
+        dtb = slot_metadata(dtb, ramdisk, args.fdtput)
+    data = image(args.kernel.read_bytes(), ramdisk, dtb)
     with args.output.open("xb") as stream:
         stream.write(data)
     print(f"{len(data)} bytes CRC32={zlib.crc32(data):08x} "

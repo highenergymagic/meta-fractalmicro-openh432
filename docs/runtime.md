@@ -142,9 +142,21 @@ the selected root's UBI integrity check or affect block-device, MMC or USB
 storage discovery.
 
 The argument names are compatible with RAUC conventions, but RAUC and a signed
-bundle installer are not included. A hung kernel has no qualified watchdog
-recovery. See the [boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md)
+bundle installer are not included. See the [boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md)
 for state format, update ordering and maintenance behavior.
+
+## Runtime watchdog
+
+The standard systembase includes `openh432-watchdog`. Systemd owns
+`/dev/watchdog0` with a requested 30-second runtime timeout; do not run a
+second watchdog daemon. The upstream driver stops the counter for suspend
+and shutdown and restores it on resume. Reboot and kexec watchdog ownership
+are disabled, so final-shutdown stalls are outside this policy's coverage.
+
+Controlled timeout reset and power-management tests passed. Recovery from
+the intermittent whole-system freeze remains unproven. See the
+[hardware watchdog reference](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/watchdog.md)
+for qualification and reset-status limitations.
 
 ## Device discovery
 

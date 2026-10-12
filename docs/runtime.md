@@ -106,6 +106,11 @@ Root remains password-locked. SSH remains key-only and is not enabled by
 this policy; serial and USB services are unchanged. Physical access to the
 built-in console provides access to the appliance account.
 
+The built-in console does not require a USB host. The development USB shell
+disables systemd terminal reset so disconnected-gadget output cannot hold the
+shared console setup lock. USB output may wait for a host, independently of
+local login, braille and speech.
+
 The home directory lives in the volatile root overlay. Files and
 account changes are lost on reboot until persistent userdata is implemented.
 

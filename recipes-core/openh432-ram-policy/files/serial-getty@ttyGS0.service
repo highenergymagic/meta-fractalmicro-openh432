@@ -15,7 +15,9 @@ StandardInput=tty
 StandardOutput=tty
 StandardError=tty
 TTYPath=/dev/ttyGS0
-TTYReset=yes
+# Terminal reset emits ANSI setup while holding systemd's /dev/console lock.
+# An unplugged gadget can block that write and prevent tty1 from starting.
+TTYReset=no
 # This physical debug shell is not a login session. Forced vhangup triggers
 # the current USB gadget driver's zero-open-count close warning.
 TTYVHangup=no

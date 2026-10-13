@@ -2,6 +2,17 @@
 require openh432-base-image.inc
 SUMMARY = "Slot-independent NAND systembase with systemd, networking and system sounds"
 IMAGE_INSTALL:append = " openh432-power-key openh432-watchdog"
+IMAGE_INSTALL:append = " openh432-storage h432b-storage-policy"
+OPENH432_PERSISTENT_STORAGE ?= "0"
+do_rootfs[depends] += "openh432-systemext:do_image_complete"
+ROOTFS_POSTPROCESS_COMMAND += "embed_systemext_contract; "
+embed_systemext_contract() {
+    install -d ${IMAGE_ROOTFS}/usr/lib/openh432
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/openh432-systemext-h432b.rootfs.verity ${IMAGE_ROOTFS}/usr/lib/openh432/systemext.verity
+    if [ "${OPENH432_PERSISTENT_STORAGE}" = "1" ]; then
+        touch ${IMAGE_ROOTFS}/usr/lib/openh432/persistent-storage
+    fi
+}
 IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-wired-policy openh432-maintenance-ssh gpsd gps-utils openh432-agps openh432-wifi openh432-bluetooth h432b-vibrator-test openh432-braille openh432-local-console openh432-boot-success openh432-suspend openh432-udev-policy openh432-speech"
 # Gzip reduces cold executable startup cost on Cortex-A8; keep one compressor thread.
 IMAGE_FSTYPES = "squashfs"

@@ -3,6 +3,7 @@ import importlib.util
 import lzma
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 PATH = Path(__file__).resolve().parents[1] / 'recipes-core/images/files/make-boot-image.py'
 spec = importlib.util.spec_from_file_location('boot_metadata', PATH)
@@ -41,6 +42,31 @@ class SlotMetadata(unittest.TestCase):
         data += self.member('TRAILER!!!', b'')
         with self.assertRaises(ValueError):
             module.root_descriptor(lzma.compress(data) + b'junk')
+
+    def test_optional_extension_and_dtb_properties(self):
+        base = self.member('etc/openh432/systembase.verity', self.descriptor)
+        ext = self.member('etc/openh432/systemext.verity', self.descriptor)
+        trailer = self.member('TRAILER!!!', b'')
+        data = lzma.compress(base + ext + trailer)
+        self.assertEqual(module.image_descriptors(data),
+                         dict(systembase=self.descriptor, systemext=self.descriptor))
+        with patch.object(module.subprocess, 'run') as run:
+            module.slot_metadata(b'dtb', data)
+        self.assertEqual([call.args[0][-2] for call in run.call_args_list],
+                         ['fractalmicro,systembase-verity-v1', 'fractalmicro,systemext-verity-v1'])
+        for bad in (ext + ext, self.member('etc/openh432/systemext.verity', b'bad'),
+                    self.member('etc/openh432/systemext.verity', self.descriptor, 0o120777)):
+            with self.assertRaises(ValueError):
+                module.image_descriptors(lzma.compress(base + bad + trailer))
+
+    def test_extension_has_separate_capacity_limit(self):
+        big = self.descriptor.replace(b'1 2 2', b'1 520000 520000').replace(b'12288', b'2147483648')
+        trailer = self.member('TRAILER!!!', b'')
+        base = self.member('etc/openh432/systembase.verity', self.descriptor)
+        ext = self.member('etc/openh432/systemext.verity', big)
+        self.assertEqual(module.image_descriptors(lzma.compress(base + ext + trailer))['systemext'], big)
+        with self.assertRaises(ValueError):
+            module.image_descriptors(lzma.compress(self.member('etc/openh432/systembase.verity', big) + trailer))
 
 
 if __name__ == '__main__':

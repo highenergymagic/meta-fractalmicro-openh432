@@ -8,8 +8,10 @@ class MaintenanceSshTests(unittest.TestCase):
         service = (BASE / "files/FMRemoteAccess.service").read_text()
         self.assertIn("ConditionFileNotEmpty=/root/.ssh/authorized_keys", service)
         self.assertIn(" -s -j -k ", service)
-        self.assertIn("-t ed25519", service)
-        self.assertIn("RuntimeDirectoryMode=0700", service)
+        self.assertIn("StateDirectoryMode=0700", service)
+        self.assertIn("StateDirectory=openh432-ssh", service)
+        self.assertIn("/var/lib/openh432-ssh/host_ed25519", service)
+        self.assertIn("prepare-host-key", service)
         self.assertNotIn("telnet", service)
     def test_pinned_component_no_shared_keys(self):
         recipe = (BASE / "openh432-maintenance-ssh_2025.89.bb").read_text()
@@ -18,5 +20,6 @@ class MaintenanceSshTests(unittest.TestCase):
         self.assertNotIn("ssh-ed25519 ", recipe)
         self.assertIn("--mtime=@", recipe)
         self.assertIn('SYSTEMD_AUTO_ENABLE = "enable"', recipe)
+        self.assertIn('python3-core python3-fcntl python3-io', recipe)
 if __name__ == "__main__":
     unittest.main()

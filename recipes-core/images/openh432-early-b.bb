@@ -2,6 +2,7 @@
 SUMMARY = "H432B root handoff with RAM-resident startup cue"
 LICENSE = "MIT"
 inherit core-image
+OPENH432_PERSISTENT_STORAGE ?= "0"
 # cfg80211 is built in: its first firmware request precedes switch_root.
 # Include the signed database here as well as in the normal wireless runtime.
 IMAGE_INSTALL = "busybox base-files base-passwd openh432-root-handoff openh432-system-sounds-player kde3-sounds-startup wireless-regdb-static"
@@ -21,4 +22,7 @@ write_early_slot() {
     touch ${IMAGE_ROOTFS}/etc/openh432/system-sounds.enabled
     printf '%s\n' b > ${IMAGE_ROOTFS}/etc/openh432-root-slot
     install -m 0644 ${DEPLOY_DIR_IMAGE}/openh432-systembase-b-h432b.rootfs.verity ${IMAGE_ROOTFS}/etc/openh432/systembase.verity
+    if [ "${OPENH432_PERSISTENT_STORAGE}" = "1" ]; then
+        install -m 0644 ${DEPLOY_DIR_IMAGE}/openh432-systemext-h432b.rootfs.verity ${IMAGE_ROOTFS}/etc/openh432/systemext.verity
+    fi
 }

@@ -14,11 +14,14 @@ Systembase volumes skip UBI's upfront CRC scan in favor of read-time verity
 checks; NAND ECC and post-update verification remain enabled. See
 [systembase integrity](verity.md) for the format, migration and failure policy.
 
-The systembase is limited to less than 200 MiB. A 64 MiB volatile overlay
-provides writable runtime state. Changes to credentials, pairing state,
-assistance caches and other overlay files are lost on reboot. Persistent
-userdata is not implemented. Managed A/B boots use persistent attempt limits
-and automatic acknowledgement of a healthy local console.
+The systembase is limited to less than 200 MiB. The default volatile mode uses
+a 64 MiB RAM overlay; credentials, pairing state and other overlay changes are
+lost on reboot. The opt-in persistent mode mounts a verified system extension
+and internal-SD state before systemd. It requires explicit provisioning and
+uses a deployment-local writable `/etc`, with shared `/var`, home directories
+and `/data`. See [persistent storage](persistent-storage.md) for the exact
+layout, migration behavior and qualification limits. Managed A/B boots use
+persistent attempt limits and acknowledgement of a healthy local console.
 
 The normal runtime permits Linux UBI maintenance and internal-SD writes.
 Factory boot and bad-block-table regions remain protected.
@@ -36,7 +39,7 @@ for layout and write boundaries.
 | System sounds | Asynchronous RAM-resident NAND startup cue; fallback/shutdown in systembase; quiet RAM development image |
 | Boot success | FMMarkBootSuccessful enabled; acknowledges only a managed, healthy boot attempt |
 | Built-in console | tty1 autologin as unprivileged user (UID/GID 1000) |
-| SSH | Key-gated maintenance with volatile identity |
+| SSH | Key-gated maintenance; persistent mode retains authorized keys in `/root` and host identity in `/var/lib/openh432-ssh` |
 | Power key | FMPowerKey tap-to-suspend and audible hold-to-shutdown; logind executes both actions |
 | Speech | FMSpeech enabled; RHVoice/SLT default, optional private OpenEVV profile with BRLTTY speech |
 | Braille | FMBraille enabled; internal display, keyboard and routing devices owned by BRLTTY |
@@ -114,8 +117,9 @@ disables systemd terminal reset so disconnected-gadget output cannot hold the
 shared console setup lock. USB output may wait for a host, independently of
 local login, braille and speech.
 
-The home directory lives in the volatile root overlay. Files and
-account changes are lost on reboot until persistent userdata is implemented.
+In volatile mode, home files and account changes are lost on reboot.
+Persistent mode keeps home files in shared userdata and account configuration
+in the selected deployment's `/etc`.
 
 ## Managed A/B boots
 

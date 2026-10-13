@@ -30,19 +30,23 @@ The assets layer supplies separately licensed system sounds and speech data.
 | --- | --- |
 | `openh432-nand-b` | Slot-independent kernel bundle and loader-selected root handoff |
 | `openh432-systembase-b` | Separate SquashFS system userspace with dm-verity integrity |
+| `openh432-systemext` | EROFS system extension with dm-verity for persistent-storage installations |
 | `openh432-fastboot-ram` | Standalone RAM environment for recovery and development |
 
 The NAND kernel mounts the slot-matched systembase and starts systemd.
 The same image pair supports either slot; historical `-b` recipe names remain
 for compatibility. A health-gated service acknowledges successful managed
-boots. Writable runtime state remains volatile; persistent userdata and a
-signed update installer are not implemented. Additional images and their
+boots. Writable state is volatile by default. The opt-in persistent-storage
+configuration adds a matched system extension and Btrfs userdata on a
+provisioned internal SD. A coordinated NAND/MMC update installer is not yet
+available. Additional images and their
 prerequisites are listed in the
 [target catalogue](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/targets.md).
 
 ## Configuration and reference
 
 - [Runtime policy](docs/runtime.md): root filesystem, services and state lifetime.
+- [Persistent storage](docs/persistent-storage.md): internal-SD layout, configuration deployments and explicit provisioning.
 - [Systembase integrity](docs/verity.md): image pairing, verification and initramfs recovery.
 - [Braille console](docs/braille.md): internal display, keyboard ownership and local-console integration.
 - [Remote access](docs/remote-access.md): maintenance SSH and credentials.

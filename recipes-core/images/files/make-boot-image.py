@@ -20,13 +20,13 @@ PAGE = 2048
 LIMIT = 32 << 20
 
 
-def root_descriptor(ramdisk):
-    """Read exactly one regular descriptor from the standard XZ/newc handoff."""
+def image_descriptors(ramdisk):
+    """Read the required base and optional extension from the XZ/newc handoff."""
     decoder = lzma.LZMADecompressor(memlimit=128 << 20)
     archive = decoder.decompress(ramdisk, max_length=64 << 20)
     if not decoder.eof or decoder.unused_data:
         raise ValueError("Unbounded or trailing initramfs stream")
-    offset, descriptor = 0, None
+    offset, descriptors = 0, {}
     while offset + 110 <= len(archive):
         header = archive[offset:offset + 110]
         if header[:6] != b'070701':
@@ -44,30 +44,38 @@ def root_descriptor(ramdisk):
         if end > len(archive):
             raise ValueError("Truncated archive entry")
         if name == b'TRAILER!!!':
-            if size or descriptor is None or any(archive[end:]):
+            if size or 'systembase' not in descriptors or any(archive[end:]):
                 raise ValueError("Missing descriptor or trailing archive data")
-            return descriptor
-        if name == b'etc/openh432/systembase.verity':
-            if descriptor is not None or mode & 0o170000 != 0o100000:
+            return descriptors
+        if name in (b'etc/openh432/systembase.verity', b'etc/openh432/systemext.verity'):
+            kind = name.rsplit(b'/', 1)[1].split(b'.')[0].decode('ascii')
+            if kind in descriptors or mode & 0o170000 != 0o100000:
                 raise ValueError("Duplicate or non-regular root descriptor")
             descriptor = archive[offset:offset + size]
-            if not re.fullmatch(rb'1 [0-9]{1,5} [0-9]{1,5} [0-9a-f]{64} [0-9a-f]{64} [0-9]{1,9}\n', descriptor):
+            if not re.fullmatch(rb'1 [0-9]{1,6} [0-9]{1,6} [0-9a-f]{64} [0-9a-f]{64} [0-9]{1,10}\n', descriptor):
                 raise ValueError("Invalid root descriptor")
             _, blocks, start, _, _, total = descriptor.split()
-            if not 2 <= int(blocks) <= 51200 or blocks != start or not 0 < int(total) <= 200 << 20:
+            limit = (200 << 20) if kind == 'systembase' else (2 << 30)
+            if not 2 <= int(blocks) <= limit // 4096 or blocks != start or not 0 < int(total) <= limit:
                 raise ValueError("Root descriptor geometry out of bounds")
+            descriptors[kind] = descriptor
         offset = end
     raise ValueError("Missing archive trailer")
 
 
+def root_descriptor(ramdisk):
+    return image_descriptors(ramdisk)['systembase']
+
+
 def slot_metadata(dtb, ramdisk, fdtput='fdtput'):
-    """Copy the initramfs descriptor into the DTB for loader pair validation."""
-    descriptor = root_descriptor(ramdisk).decode('ascii')
+    """Bind each required slot image to its descriptor before activation."""
+    descriptors = image_descriptors(ramdisk)
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / 'board.dtb'
         path.write_bytes(dtb)
-        subprocess.run([fdtput, '-t', 's', str(path), '/chosen',
-                        'fractalmicro,systembase-verity-v1', descriptor], check=True)
+        for kind, descriptor in sorted(descriptors.items()):
+            subprocess.run([fdtput, '-t', 's', str(path), '/chosen',
+                            f'fractalmicro,{kind}-verity-v1', descriptor.decode('ascii')], check=True)
         return path.read_bytes()
 
 

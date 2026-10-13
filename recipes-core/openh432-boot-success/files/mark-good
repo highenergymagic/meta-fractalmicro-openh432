@@ -62,4 +62,10 @@ for proc in /proc/[0-9]*; do
     fi
 done
 [ "$found" = yes ]
-exec h432b-bootstate-check --mark-good "$slot" "$attempt"
+if [ -f /run/openh432-deployment ]; then
+    /usr/libexec/openh432/storage-runtime check-health
+fi
+h432b-bootstate-check --mark-good "$slot" "$attempt"
+if [ -f /run/openh432-deployment ]; then
+    /usr/libexec/openh432/storage-runtime mark-good
+fi

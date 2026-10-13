@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "partition_table": "gpt",
+  "sector_bytes": 512,
+  "partitions": [
+    {"number": 1, "label": "systemext_A", "size_bytes": 2147483648, "filesystem": "erofs", "integrity": "dm-verity"},
+    {"number": 2, "label": "systemext_B", "size_bytes": 2147483648, "filesystem": "erofs", "integrity": "dm-verity"},
+    {"number": 3, "label": "cache", "size_bytes": 4294967296, "filesystem": "f2fs", "integrity": "none"},
+    {"number": 4, "label": "userdata", "size_bytes": "remaining", "filesystem": "btrfs", "encryption": "none"}
+  ],
+  "shared_subvolumes": ["var", "home", "root", "data", "identity"],
+  "configuration": "deployment-specific",
+  "application_data": "/data/data/<application-id>/files/<install-instance-id>/",
+  "provisioning": "explicit-install-only",
+  "factory_reset": ["cache", "userdata"]
+}

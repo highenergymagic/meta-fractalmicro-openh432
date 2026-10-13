@@ -16,7 +16,7 @@ Provision public keys through an already trusted local console. Create
 ```sh
 systemctl start FMRemoteAccess.service
 systemctl status FMRemoteAccess.service --no-pager
-/usr/libexec/openh432-ssh/dropbearkey -y -f /run/openh432-ssh/host_ed25519
+/usr/libexec/openh432-ssh/dropbearkey -y -f /var/lib/openh432-ssh/host_ed25519
 ```
 
 Obtain the host public key through that trusted console and pin it in the
@@ -25,12 +25,25 @@ as root with the corresponding private operator key; use strict host-key
 checking and disable fallback password authentication.
 
 The service listens on TCP port 22. Use a trusted maintenance LAN.
-The current root overlay is volatile: provisioned keys disappear on reboot,
-and the service generates a fresh Ed25519 host key in `/run`. A restart also
-recreates its runtime directory. Reprovision and repin explicitly after
-restart/reboot. Do not disable host-key verification to hide that change.
-Persistent per-device identity requires a separately designed data partition
-policy; a shared image must never contain a shared private host key.
+The host key is generated once in `/var/lib/openh432-ssh/host_ed25519`.
+Systemd creates its root-owned directory with mode 0700; the key has mode 0600.
+Generation is serialized and the validated key is atomically published after
+syncing it. An invalid existing key stops the service instead of rotating its
+identity. Service restarts reuse the same key.
+
+In persistent-storage mode, shared `/var` retains the host key across reboots,
+image updates and slot rollback. Shared `/root` retains authorized keys. A
+factory reset clears both. In the default volatile-storage mode, both are
+lost on reboot. Persistent mode is therefore required for durable remote-access
+identity; machine ID alone does not provide it.
+
+Upgrading from the older runtime-key service creates a new persistent key on
+its first start. Obtain and pin that new public key through the trusted local
+console. Do not disable host-key verification to hide an unexpected change.
+Both eligible OS slots must use this service policy for stable SSH identity
+across rollback. An older image that still reads its key from `/run` does not
+automatically adopt the persistent key, even though the file is retained.
+A shared image must never contain a private host key.
 
 ## Volatile-overlay qualification payload
 
@@ -54,5 +67,9 @@ still attached before disconnecting USB. Verify independent network access befor
 Key-authenticated sessions and strict host-key verification passed over
 Ethernet and Wi-Fi. Password-only authentication was rejected. The normal
 systembase includes the key-gated service; no credentials are shipped.
-Persistent identity, multi-user policy and untrusted network exposure
-are not qualified.
+Persistent identity has source tests for reuse, failed generation, malformed
+keys and unsafe permissions. On hardware, the installed helper retained a
+pre-update public host identity through a kernel/base/extension update and
+an ordinary software reboot. This test exercised systemd state-directory
+creation and key preparation without enabling a network listener. Multi-user
+policy and untrusted network exposure are not qualified.

@@ -3,7 +3,8 @@ require recipes-core/dropbear/dropbear_2025.89.bb
 S = "${UNPACKDIR}/dropbear-${PV}"
 SUMMARY = "Key-only opt-in OpenH432 maintenance SSH"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:${COREBASE}/meta/recipes-core/dropbear/dropbear:"
-SRC_URI += "file://FMRemoteAccess.service"
+SRC_URI += "file://FMRemoteAccess.service file://prepare-host-key.py"
+RDEPENDS:${PN} += "python3-core python3-fcntl python3-io"
 PACKAGECONFIG = ""
 RPROVIDES:${PN} = ""
 RCONFLICTS:${PN} = "dropbear openssh-sshd"
@@ -20,6 +21,7 @@ do_install() {
     ln -s dropbearmulti ${D}${libexecdir}/openh432-ssh/dropbear
     ln -s dropbearmulti ${D}${libexecdir}/openh432-ssh/dropbearkey
     install -m 0644 ${UNPACKDIR}/FMRemoteAccess.service ${D}${systemd_system_unitdir}/
+    install -m 0755 ${UNPACKDIR}/prepare-host-key.py ${D}${libexecdir}/openh432-ssh/prepare-host-key
     sed -i -e 's,@LIBEXECDIR@,${libexecdir},g' ${D}${systemd_system_unitdir}/FMRemoteAccess.service
 }
 FILES:${PN} = "${libexecdir}/openh432-ssh ${systemd_system_unitdir}/FMRemoteAccess.service"

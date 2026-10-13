@@ -34,13 +34,14 @@ def verify(tool, image, blocks, root, salt, check=True):
 def build(source, output, descriptor, tool, capacity=LIMIT):
     source, output, descriptor = map(Path, (source, output, descriptor))
     size = source.stat().st_size
-    if not 0 < capacity <= LIMIT:
+    if not 0 < capacity <= 2 * 1024 * 1024 * 1024:
         raise ValueError("Invalid image capacity")
     if not 0 < size <= capacity:
         raise ValueError("Systembase is empty or exceeds volume capacity")
     if len({p.resolve() for p in (source, output, descriptor)}) != 3:
         raise ValueError("Input, output and descriptor must be different files")
-    # Keep an explicit hash-tree block even for a minimal test image.
+    # Even an empty extension needs an explicit hash-tree block. A one-block
+    # payload otherwise produces no tree, unlike the normal mount contract.
     blocks = max(2, (size + BLOCK - 1) // BLOCK)
     # Deterministic, image-specific salt; neither UUIDs nor random host state
     # enter the format. The root hash is integrity metadata, not a signature.

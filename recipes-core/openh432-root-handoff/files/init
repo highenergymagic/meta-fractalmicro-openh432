@@ -111,6 +111,18 @@ mount --move /dev /newroot/dev
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
 mount --move /run /newroot/run
+if [ -f /newroot/usr/lib/openh432/persistent-storage ]; then
+    read -r version blocks offset root_digest remainder < /etc/openh432/systembase.verity
+    case "$slot" in a) persistent_slot=A ;; b) persistent_slot=B ;; esac
+    if ! chroot /newroot /usr/libexec/openh432/storage-runtime activate "$root_digest" "$persistent_slot"; then
+        # Recovery belongs to the initramfs, including its device and proc view.
+        mount --move /newroot/run /run
+        mount --move /newroot/sys /sys
+        mount --move /newroot/proc /proc
+        mount --move /newroot/dev /dev
+        fail "persistent storage activation"
+    fi
+fi
 read -r uptime unused </newroot/proc/uptime
 echo "Switch root $uptime"
 exec 1>&3 2>&4 3>&- 4>&-

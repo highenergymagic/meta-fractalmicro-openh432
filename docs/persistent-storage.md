@@ -50,9 +50,14 @@ Shared state is independent of OS rollback:
 | User home directories | `/home`, `/root` | Shared |
 | Service state | `/var` | Shared; backward-compatible migrations required |
 | SSH host key | `/var/lib/openh432-ssh` | Shared, root-only; cleared by factory reset |
-| Machine identity | Explicit identity bindings | Shared across deployments |
+| Machine identity | `/etc/machine-id` | Shared across deployments; mode `0444` |
 | OS configuration | `/etc` | Separate writable deployment directory |
 | Scratch space | `/cache` | Disposable; not a source of trusted executable images |
+
+The handoff validates the persistent machine ID and binds it into `/etc`
+without regenerating it. It is readable by unprivileged services, including
+networkd's DHCP clients; it is not a credential. SSH private keys retain their
+separate root-only permissions.
 
 Applications may store settings at
 `/data/data/<application-id>/files/<install-instance-id>/settings.db`.

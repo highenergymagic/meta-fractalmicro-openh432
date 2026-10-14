@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 
 GIB = 1024 ** 3
@@ -91,6 +92,20 @@ def durable_text(path, text):
         os.close(fd)
 
 
+def prepare_machine_id(path):
+    # systemd-networkd and other unprivileged services read this identifier.
+    # It is stable identity, not a secret; never regenerate it during boot.
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    with os.fdopen(fd, 'r', encoding='ascii') as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or not re.fullmatch(
+                '[0-9a-f]{32}\n', stream.read(34)):
+            raise ValueError('persistent machine identity missing or invalid')
+        if stat.S_IMODE(info.st_mode) != 0o444:
+            os.fchmod(stream.fileno(), 0o444)
+            os.fsync(stream.fileno())
+
+
 def deployment_module():
     # Installed executable has no .py suffix.
     from importlib.machinery import SourceFileLoader
@@ -169,8 +184,7 @@ def activate(identity, slot):
         run('mount', '--bind', store / name, '/' + name)
     run('mount', '-t', 'f2fs', '-o', 'nodev,nosuid', cache, '/cache')
     machine_id = store / 'identity/machine-id'
-    if machine_id.is_symlink() or not re.fullmatch('[0-9a-f]{32}\n', machine_id.read_text()):
-        raise ValueError('persistent machine identity missing or invalid')
+    prepare_machine_id(machine_id)
     target = Path('/etc/machine-id')
     if target.is_symlink():
         raise ValueError('machine-id mount point must be a regular file')

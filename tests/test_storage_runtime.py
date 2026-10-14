@@ -23,6 +23,41 @@ def layout():
 
 
 class StorageRuntimeTests(unittest.TestCase):
+    def test_machine_identity_is_readable_without_changing_value(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'machine-id'
+            value = 'b' * 32 + '\n'
+            path.write_text(value)
+            path.chmod(0o600)
+            runtime.prepare_machine_id(path)
+            self.assertEqual(path.read_text(), value)
+            self.assertEqual(path.stat().st_mode & 0o777, 0o444)
+            with patch.object(runtime.os, 'fchmod') as chmod:
+                runtime.prepare_machine_id(path)
+                chmod.assert_not_called()
+
+    def test_invalid_identity_is_not_changed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'machine-id'
+            for value in ('', 'b' * 32, 'B' * 32 + '\n', 'b' * 32 + '\nextra'):
+                path.write_text(value)
+                path.chmod(0o600)
+                with self.assertRaises(ValueError):
+                    runtime.prepare_machine_id(path)
+                self.assertEqual(path.read_text(), value)
+                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
+    def test_machine_identity_rejects_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'target'
+            target.write_text('b' * 32 + '\n')
+            target.chmod(0o600)
+            link = Path(directory) / 'machine-id'
+            link.symlink_to(target)
+            with self.assertRaises(OSError):
+                runtime.prepare_machine_id(link)
+            self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+
     def test_persistent_identity_is_not_committed_as_transient(self):
         dropin = SOURCE.with_name('persistent-machine-id.conf').read_text()
         self.assertIn('ConditionPathExists=!/run/openh432-deployment', dropin)

@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: MIT
+polkit.addRule(function(action, subject) {
+    // The PAM-free appliance login has no logind session. Authority belongs
+    // to this account, including any explicitly authorized remote session.
+    if (subject.user !== "user")
+        return polkit.Result.NOT_HANDLED;
+    var allowed = [
+        "org.freedesktop.NetworkManager.enable-disable-network",
+        "org.freedesktop.NetworkManager.enable-disable-wifi",
+        "org.freedesktop.NetworkManager.network-control",
+        "org.freedesktop.NetworkManager.wifi.scan",
+        "org.freedesktop.NetworkManager.settings.modify.own",
+        "org.freedesktop.NetworkManager.settings.modify.system"
+    ];
+    if (allowed.indexOf(action.id) !== -1)
+        return polkit.Result.YES;
+    return polkit.Result.NOT_HANDLED;
+});

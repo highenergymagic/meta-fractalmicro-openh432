@@ -1,0 +1,25 @@
+policy_module(fm_settings, 1.0.0)
+
+type fm_settings_t;
+type fm_settings_exec_t;
+init_daemon_domain(fm_settings_t, fm_settings_exec_t)
+
+type fm_settings_data_t;
+files_type(fm_settings_data_t)
+
+allow fm_settings_t self:unix_stream_socket create_stream_socket_perms;
+manage_dirs_pattern(fm_settings_t, fm_settings_data_t, fm_settings_data_t)
+manage_files_pattern(fm_settings_t, fm_settings_data_t, fm_settings_data_t)
+allow fm_settings_t fm_settings_data_t:file map;
+files_search_var_lib(fm_settings_t)
+files_read_etc_files(fm_settings_t)
+miscfiles_read_localization(fm_settings_t)
+logging_send_syslog_msg(fm_settings_t)
+
+optional_policy(`
+    dbus_system_bus_client(fm_settings_t)
+    init_dbus_chat(fm_settings_t)
+')
+optional_policy(`
+    unconfined_dbus_chat(fm_settings_t)
+')

@@ -7,7 +7,7 @@ After=local-fs.target sound.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/true
+# No startup process is needed: becoming active arms the shutdown commands.
 # The helper checks system state: ordinary stop/restart must stay silent.
 ExecStop=-/usr/libexec/fm-system-sound shutdown
 ExecStopPost=-/usr/libexec/fm-system-sound mute

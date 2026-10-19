@@ -6,7 +6,7 @@ This program never partitions or formats storage. Incomplete storage enters
 the caller's recovery path. Configuration is prepared only for new releases.
 """
 import argparse
-import importlib.util
+import errno
 import json
 import os
 from pathlib import Path
@@ -108,12 +108,36 @@ def prepare_machine_id(path):
 
 def deployment_module():
     # Installed executable has no .py suffix.
+    import importlib.util
     from importlib.machinery import SourceFileLoader
     loader = SourceFileLoader('configuration', str(Path(__file__).with_name('config-deployment')))
     spec = importlib.util.spec_from_loader(loader.name, loader)
     module = importlib.util.module_from_spec(spec)
     loader.exec_module(module)
     return module
+
+
+def restore_mount_label(source, destination):
+    """Copy only the immutable vendor SELinux label onto a mount root.
+
+    Tree inventories intentionally exclude their root directory. New /etc
+    deployments therefore need this separately, before systemd loads policy.
+    The ephemeral overlay root is relabeled after policy load by userspace.
+    """
+    try:
+        expected = os.getxattr(source, 'security.selinux', follow_symlinks=False)
+    except OSError as error:
+        if error.errno == errno.ENODATA:
+            return  # Images without SELinux labels remain supported.
+        raise
+    try:
+        actual = os.getxattr(destination, 'security.selinux', follow_symlinks=False)
+    except OSError as error:
+        if error.errno != errno.ENODATA:
+            raise
+        actual = None
+    if actual != expected:
+        os.setxattr(destination, 'security.selinux', expected, follow_symlinks=False)
 
 
 def activate(identity, slot):
@@ -158,9 +182,9 @@ def activate(identity, slot):
     base_usr.mkdir(exist_ok=True)
     run('mount', '--bind', '/usr', base_usr)
     run('mount', '-t', 'overlay', '-o', f'ro,lowerdir={extension}/usr:{base_usr}', 'overlay', '/usr')
-    module = deployment_module()
     destination = store / 'deployments' / identity
     if not destination.exists():
+        module = deployment_module()
         previous = None
         last = store / 'last-good'
         if last.exists():
@@ -178,6 +202,7 @@ def activate(identity, slot):
         raise ValueError('configuration deployment incomplete')
     if (destination / 'etc').is_symlink() or not (destination / 'etc').is_dir():
         raise ValueError('unsafe configuration tree')
+    restore_mount_label('/.openh432/lower/etc', destination / 'etc')
     run('mount', '--bind', destination / 'etc', '/etc')
     for name in ('var', 'home', 'root', 'data'):
         Path('/' + name).mkdir(exist_ok=True)

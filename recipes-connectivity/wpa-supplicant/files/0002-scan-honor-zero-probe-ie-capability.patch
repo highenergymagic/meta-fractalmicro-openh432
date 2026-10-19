@@ -1,0 +1,50 @@
+Subject: [PATCH] scan: omit generated probe IEs when hardware cannot carry them
+
+nl80211 publishes NL80211_ATTR_MAX_SCAN_IE_LEN, including zero for firmware
+that constructs its own Probe Requests. Do not append automatically generated
+extended-capability/WPS/P2P elements for such hardware. This permits ordinary
+active scans from D-Bus clients without pretending the driver supports custom
+Probe Request content. Explicit caller-provided IEs still reach the driver and
+are subject to its normal validation.
+
+No board-name or interface-name matching is used. Drivers that do not publish
+the capability retain existing behaviour.
+
+Upstream-Status: Pending
+
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -2330,6 +2330,8 @@ struct wpa_driver_capa {
+ #define WPA_DRIVER_FLAGS2_SAE_OFFLOAD_AP	0x0000000000100000ULL
+ /** Driver supports TWT responder in HT and VHT modes */
+ #define WPA_DRIVER_FLAGS2_HT_VHT_TWT_RESPONDER	0x0000000000200000ULL
++/** Driver cannot include caller-supplied elements in Probe Requests. */
++#define WPA_DRIVER_FLAGS2_NO_SCAN_IES		0x0000000000400000ULL
+ 	u64 flags2;
+ 
+ #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
+--- a/src/drivers/driver_nl80211_capa.c
++++ b/src/drivers/driver_nl80211_capa.c
+@@ -958,6 +958,10 @@ static int wiphy_info_handler(struct nl_msg *msg, void *arg)
+ 	if (tb[NL80211_ATTR_MAX_NUM_SCAN_SSIDS])
+ 		capa->max_scan_ssids =
+ 			nla_get_u8(tb[NL80211_ATTR_MAX_NUM_SCAN_SSIDS]);
++	if (tb[NL80211_ATTR_MAX_SCAN_IE_LEN] &&
++	    nla_get_u16(tb[NL80211_ATTR_MAX_SCAN_IE_LEN]) == 0)
++		capa->flags2 |= WPA_DRIVER_FLAGS2_NO_SCAN_IES;
++
+ 
+ 	if (tb[NL80211_ATTR_MAX_NUM_SCHED_SCAN_SSIDS])
+ 		capa->max_sched_scan_ssids =
+--- a/wpa_supplicant/scan.c
++++ b/wpa_supplicant/scan.c
+@@ -731,6 +731,9 @@ static struct wpabuf * wpa_supplicant_extra_ies(struct wpa_supplicant *wpa_s)
+ 	enum wps_request_type req_type = WPS_REQ_ENROLLEE_INFO;
+ #endif /* CONFIG_WPS */
+ 
++	if (wpa_s->drv_flags2 & WPA_DRIVER_FLAGS2_NO_SCAN_IES)
++		return NULL;
++
+ 	if (!is_zero_ether_addr(wpa_s->ml_probe_bssid)) {
+ 		extra_ie = wpa_supplicant_ml_probe_ie(wpa_s->ml_probe_mld_id,
+ 						      wpa_s->ml_probe_links);

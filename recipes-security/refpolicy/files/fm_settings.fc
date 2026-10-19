@@ -1,0 +1,2 @@
+/usr/libexec/openh432/settingsd -- gen_context(system_u:object_r:fm_settings_exec_t,s0)
+/var/lib/fractalmicro/settings(/.*)? gen_context(system_u:object_r:fm_settings_data_t,s0)

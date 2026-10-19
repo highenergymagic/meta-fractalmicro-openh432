@@ -55,8 +55,8 @@ Shared state is independent of OS rollback:
 | Scratch space | `/cache` | Disposable; not a source of trusted executable images |
 
 The handoff validates the persistent machine ID and binds it into `/etc`
-without regenerating it. It is readable by unprivileged services, including
-networkd's DHCP clients; it is not a credential. SSH private keys retain their
+without regenerating it. It is readable by unprivileged system services;
+it is not a credential. SSH private keys retain their
 separate root-only permissions.
 
 Applications may store settings at

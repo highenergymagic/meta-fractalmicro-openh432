@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=ADB local authorization channel
+
+[Socket]
+ListenSequentialPacket=/run/openh432-adb/auth
+SocketMode=0600
+DirectoryMode=0700
+SocketUser=root
+SocketGroup=root
+Service=FMAdb.service
+RemoveOnStop=yes

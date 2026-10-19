@@ -18,6 +18,9 @@ class RamImage(unittest.TestCase):
     def test_explicit_tools_without_recommendations(self):
         text = RECIPE.read_text()
         packages = re.search(r'IMAGE_INSTALL = "([^"]+)"', text).group(1).split()
+        self.assertIn('OPENH432_NETWORK_PACKAGE ?= "systemd-networkd"', text)
+        packages = ["systemd-networkd" if p == "${OPENH432_NETWORK_PACKAGE}" else p
+                    for p in packages]
         for package in ("os-release", "systemd-networkd", "systemd-analyze", "systemd-extra-utils",
                         "libseccomp", "libacl", "libzstd"):
             self.assertIn(package, packages)
@@ -36,12 +39,14 @@ class RamImage(unittest.TestCase):
         self.assertIn('REPRODUCIBLE_TIMESTAMP_ROOTFS = "${SOURCE_DATE_EPOCH}"', text)
         self.assertIn('IMAGE_VERSION_SUFFIX = "-${SOURCE_DATE_EPOCH}"', text)
 
-    def finalize(self, root):
+    def finalize(self, root, network="usr/lib/systemd/systemd-networkd"):
         hook = re.search(r"python finalize_ram_root\(\) \{\n(.*?)\n\}",
                          RECIPE.read_text(), re.S).group(1)
 
         class Data:
             def getVar(self, key):
+                if key == "OPENH432_NETWORK_EXECUTABLE":
+                    return network
                 assert key == "IMAGE_ROOTFS"
                 return str(root)
 
@@ -77,6 +82,17 @@ class RamImage(unittest.TestCase):
             (root / "etc/initrd-release").touch()
             with self.assertRaisesRegex(RuntimeError, "switch-root"):
                 self.finalize(root)
+
+    def test_selected_network_backend_is_required(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self.fixture(root)
+            (root / "usr/lib/systemd/systemd-networkd").unlink()
+            with self.assertRaisesRegex(RuntimeError, "usr/sbin/NetworkManager"):
+                self.finalize(root, "usr/sbin/NetworkManager")
+            (root / "usr/sbin").mkdir(parents=True, exist_ok=True)
+            (root / "usr/sbin/NetworkManager").write_text("fixture\n")
+            self.finalize(root, "usr/sbin/NetworkManager")
 
     def test_rejects_missing_component(self):
         for required in REQUIRED:

@@ -2,7 +2,9 @@
 SUMMARY = "OpenH432 shared development userland"
 LICENSE = "MIT"
 inherit core-image h432b-systembase
-IMAGE_INSTALL = "packagegroup-core-boot os-release systemd systemd-networkd systemd-analyze systemd-extra-utils libseccomp libacl libzstd openh432-ram-policy alsa-utils-aplay alsa-utils-amixer mtd-utils mtd-utils-ubifs coreutils"
+OPENH432_NETWORK_PACKAGE ?= "systemd-networkd"
+OPENH432_NETWORK_EXECUTABLE ?= "usr/lib/systemd/systemd-networkd"
+IMAGE_INSTALL = "packagegroup-core-boot os-release systemd ${OPENH432_NETWORK_PACKAGE} systemd-analyze systemd-extra-utils libseccomp libacl libzstd openh432-ram-policy alsa-utils-aplay alsa-utils-amixer mtd-utils mtd-utils-ubifs coreutils"
 IMAGE_FEATURES = ""
 # SquashFS is the same DEBUG userland for NAND-base qualification, not a
 # production root; it retains the physical USB root shell from ram-policy.
@@ -45,7 +47,7 @@ python finalize_ram_root() {
         bb.fatal('Development root must not enter systemd initrd switch-root mode')
     for required in ('init', 'usr/lib/os-release', 'usr/bin/systemd-analyze', 'usr/bin/systemd-run',
                      'usr/bin/systemd-repart', 'usr/bin/systemd-sysext',
-                     'usr/lib/systemd/systemd-networkd', 'usr/lib/libseccomp.so.2',
+                     d.getVar('OPENH432_NETWORK_EXECUTABLE'), 'usr/lib/libseccomp.so.2',
                      'usr/lib/libacl.so.1', 'usr/lib/libzstd.so.1'):
         if not (root / required).is_file():
             bb.fatal('Missing development runtime component: ' + required)

@@ -1,0 +1,20 @@
+[Unit]
+Description=Apply SELinux labels to persistent appliance state
+DefaultDependencies=no
+After=local-fs.target
+Before=sysinit.target systemd-tmpfiles-setup.service FMSettings.service FMAccessibility.target FMBraille.service NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/openh432/selinux-label-state
+RemainAfterExit=yes
+TimeoutStartSec=180
+UMask=0077
+ProtectSystem=yes
+ReadWritePaths=/etc /var /home /root /data /cache
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+CapabilityBoundingSet=CAP_MAC_ADMIN CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_FOWNER
+
+[Install]
+WantedBy=sysinit.target

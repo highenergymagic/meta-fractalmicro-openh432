@@ -2,6 +2,7 @@
 SUMMARY = "Slot-independent read-only OpenH432 system extension"
 LICENSE = "MIT"
 inherit core-image
+inherit openh432-selinux-image
 SRC_URI = "file://make-verity-image.py"
 S = "${UNPACKDIR}"
 do_rootfs[cleandirs] = "${IMAGE_ROOTFS} ${IMGDEPLOYDIR}"

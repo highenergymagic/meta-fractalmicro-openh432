@@ -46,10 +46,13 @@ prerequisites are listed in the
 ## Configuration and reference
 
 - [Runtime policy](docs/runtime.md): root filesystem, services and state lifetime.
+- [Networking](docs/networking.md): connection ownership, persistent profiles and authorization.
+- [System settings](docs/settings.md): typed CLI/D-Bus preferences and storage boundaries.
 - [Persistent storage](docs/persistent-storage.md): internal-SD layout, configuration deployments and explicit provisioning.
 - [Systembase integrity](docs/verity.md): image pairing, verification and initramfs recovery.
 - [Braille console](docs/braille.md): internal display, keyboard ownership and local-console integration.
 - [Remote access](docs/remote-access.md): maintenance SSH and credentials.
+- [USB debugging](docs/adb.md): authenticated ADB, local approval and development-mode selection.
 - [Offline speech](docs/speech.md): voice packages, local client API and audio policy.
 - [Optional OpenEVV](docs/openevv.md): restricted build inputs and evaluation interface.
 - [System sounds](docs/system-sounds.md): packages, playback and volume policy.

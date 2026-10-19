@@ -1,0 +1,25 @@
+From: Fractal Microsystems <opensource@fractalmicro.org>
+Subject: [PATCH] seutil: allow file-context readers to traverse policy symlink
+
+Immutable deployments may place policy under /usr and link /etc/selinux to
+it. Domains already authorized to read the file-context database also need
+to traverse that policy-configuration symlink. This grants no writes or
+additional policy-file access.
+
+Upstream-Status: Pending
+Signed-off-by: Fractal Microsystems <opensource@fractalmicro.org>
+---
+ policy/modules/system/selinuxutil.if | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/policy/modules/system/selinuxutil.if b/policy/modules/system/selinuxutil.if
+--- a/policy/modules/system/selinuxutil.if
++++ b/policy/modules/system/selinuxutil.if
+@@ -835,6 +835,7 @@ interface(`seutil_read_file_contexts',`
+ 
+ 	files_search_etc($1)
+ 	allow $1 { selinux_config_t default_context_t }:dir search_dir_perms;
++	allow $1 selinux_config_t:lnk_file read_lnk_file_perms;
+ 	read_files_pattern($1, file_context_t, file_context_t)
+ 	allow $1 file_context_t:file map;
+ ')

@@ -1,0 +1,40 @@
+From: Fractal Microsystems <openh432@fractalmicro.org>
+Subject: [PATCH] supplicant: filter alternative connect AKMs by driver capability
+
+The selected AKM is validated separately, but alternatives from a network
+profile can include suites absent from the station driver's capabilities.
+Do not add unsupported suites to NL80211_CMD_CONNECT. Preserve the selected
+suite and the existing fallback when the driver cannot report capabilities.
+
+Upstream-Status: Pending
+---
+--- a/wpa_supplicant/wpa_supplicant.c
++++ b/wpa_supplicant/wpa_supplicant.c
+@@ -1571,6 +1571,8 @@ static void wpas_update_allowed_key_mgmt(struct wpa_supplicant *wpa_s,
+ {
+ 	int akm_count = wpa_s->max_num_akms;
+ 	u8 capab = 0;
++	struct wpa_driver_capa capa;
++	unsigned int supported;
+ 
+ 	if (akm_count < 2)
+ 		return;
+@@ -1649,6 +1651,18 @@ static void wpas_update_allowed_key_mgmt(struct wpa_supplicant *wpa_s,
+ 		return;
+ 	}
+ 
++	if (wpa_drv_get_capa(wpa_s, &capa) == 0) {
++		supported = capa.key_mgmt_iftype[WPA_IF_STATION];
++		if (!(supported & WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK))
++			wpa_s->allowed_key_mgmts &= ~WPA_KEY_MGMT_PSK;
++		if (!(supported & WPA_DRIVER_CAPA_KEY_MGMT_PSK_SHA256))
++			wpa_s->allowed_key_mgmts &= ~WPA_KEY_MGMT_PSK_SHA256;
++		if (!(supported & WPA_DRIVER_CAPA_KEY_MGMT_SAE))
++			wpa_s->allowed_key_mgmts &= ~WPA_KEY_MGMT_SAE;
++		if (!(supported & WPA_DRIVER_CAPA_KEY_MGMT_SAE_EXT_KEY))
++			wpa_s->allowed_key_mgmts &= ~WPA_KEY_MGMT_SAE_EXT_KEY;
++	}
++
+ 	if (wpa_s->conf->sae_pwe != SAE_PWE_HUNT_AND_PECK &&
+ 	    wpa_s->conf->sae_pwe != SAE_PWE_FORCE_HUNT_AND_PECK)
+ 		capab |= BIT(WLAN_RSNX_CAPAB_SAE_H2E);

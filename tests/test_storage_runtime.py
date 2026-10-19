@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 import copy
+import errno
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -23,6 +24,37 @@ def layout():
 
 
 class StorageRuntimeTests(unittest.TestCase):
+    def test_mount_label_is_copied_from_vendor_only_when_needed(self):
+        label = b'system_u:object_r:etc_t:s0'
+        for actual in (label, b'system_u:object_r:unlabeled_t:s0'):
+            with patch.object(runtime.os, 'getxattr', side_effect=[label, actual]), \
+                    patch.object(runtime.os, 'setxattr') as setter:
+                runtime.restore_mount_label('/vendor/etc', '/deployment/etc')
+                if actual == label:
+                    setter.assert_not_called()
+                else:
+                    setter.assert_called_once_with('/deployment/etc', 'security.selinux',
+                                                   label, follow_symlinks=False)
+
+    def test_mount_label_absent_and_errors(self):
+        missing = OSError(errno.ENODATA, 'no label')
+        with patch.object(runtime.os, 'getxattr', side_effect=missing), \
+                patch.object(runtime.os, 'setxattr') as setter:
+            runtime.restore_mount_label('/vendor/etc', '/deployment/etc')
+            setter.assert_not_called()
+        with patch.object(runtime.os, 'getxattr', side_effect=[b'etc_label', missing]), \
+                patch.object(runtime.os, 'setxattr') as setter:
+            runtime.restore_mount_label('/vendor/etc', '/deployment/etc')
+            setter.assert_called_once()
+        with patch.object(runtime.os, 'getxattr', side_effect=PermissionError()):
+            with self.assertRaises(PermissionError):
+                runtime.restore_mount_label('/vendor/etc', '/deployment/etc')
+
+    def test_existing_deployment_skips_migration_import(self):
+        source = SOURCE.read_text()
+        self.assertIn('if not destination.exists():\n        module = deployment_module()', source)
+        self.assertNotIn('\nimport importlib.util\n', source)
+
     def test_machine_identity_is_readable_without_changing_value(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'machine-id'

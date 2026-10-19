@@ -56,20 +56,35 @@ def inventory(root):
     return result
 
 
+def configuration_record(record):
+    """SELinux labels belong to the OS policy, not the user's configuration."""
+    if record is None:
+        return None
+    return {**record, "xattrs": {key: value for key, value in record["xattrs"].items()
+                                 if key != "security.selinux"}}
+
+
 def plan(old, current, new):
     """Return path -> source, rejecting content, metadata and tree conflicts."""
     selected = {}
     conflicts = []
     for name in sorted(old.keys() | current.keys() | new.keys()):
         before, local, vendor = old.get(name), current.get(name), new.get(name)
-        if local == before:
+        baseline = configuration_record(before)
+        local_config = configuration_record(local)
+        vendor_config = configuration_record(vendor)
+        if local_config == baseline:
             chosen, source = vendor, "new"
-        elif vendor == before or vendor == local:
+        elif vendor_config == baseline or vendor_config == local_config:
             chosen, source = local, "current"
         else:
             conflicts.append(name)
             continue
         if chosen is not None:
+            if vendor is not None:
+                chosen = configuration_record(chosen)
+                if "security.selinux" in vendor["xattrs"]:
+                    chosen["xattrs"]["security.selinux"] = vendor["xattrs"]["security.selinux"]
             selected[name] = (source, chosen)
     # Deleting/replacing a directory must not silently swallow new children.
     for name in selected:

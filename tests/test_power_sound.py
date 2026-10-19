@@ -28,6 +28,16 @@ class PowerSoundPolicy(unittest.TestCase):
         self.assertIn("After=local-fs.target sound.target", shutdown)
         self.assertIn("RemainAfterExit=yes", shutdown)
 
+    def test_shutdown_service_has_no_startup_process(self):
+        shutdown = (FILES / "FMShutdownSound.service").read_text()
+        self.assertIn("Type=oneshot", shutdown)
+        self.assertIn("RemainAfterExit=yes", shutdown)
+        self.assertNotIn("ExecStart=", shutdown)
+        self.assertIn("ExecStop=-/usr/libexec/fm-system-sound shutdown", shutdown)
+        self.assertIn("ExecStopPost=-/usr/libexec/fm-system-sound mute", shutdown)
+        self.assertIn("NoNewPrivileges=yes", shutdown)
+        self.assertIn("ProtectHome=yes", shutdown)
+
     def run_player(self, mode, *, enabled=True, state="running", fail=False,
                    card="present"):
         with tempfile.TemporaryDirectory() as folder:

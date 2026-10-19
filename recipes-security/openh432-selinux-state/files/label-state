@@ -1,0 +1,42 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+set -eu
+umask 077
+test -e /sys/fs/selinux/enforce
+policy=/usr/share/openh432/selinux/targeted
+contexts=$policy/contexts/files/file_contexts
+for input in "$contexts" "$contexts.subs_dist" "$policy/policy/policy.33"; do
+    test -s "$input"
+done
+# The identity is generated with the immutable, verity-protected policy.
+# Avoid rereading and hashing the full policy from NAND on every boot.
+read -r version < "$policy/label-version"
+test "${#version}" -eq 64
+case "$version" in *[!0-9a-f]*) exit 1 ;; esac
+directory=/var/lib/openh432
+marker=$directory/selinux-label-version
+test ! -L "$directory"
+test ! -L "$marker"
+mkdir -p "$directory"
+# The overlay root is recreated each boot. Label its live inode after policy
+# load, even when persistent state already has the current policy identity.
+# Reuse the build-labeled, verity-protected root as the reference. Unlike
+# restorecon, this does not parse the file-context database on every boot.
+# This is a single-directory operation, not a recursive rootfs relabel.
+chcon --reference=/.openh432/lower /
+if [ -f "$marker" ] && [ "$(cat "$marker")" = "$version" ]; then
+    exit 0
+fi
+# Immutable images were labeled during their build. Never relabel the hidden
+# factory /etc baselines: their metadata is part of the deployment contract.
+restorecon -RF /etc /var /home /root /data /cache
+temporary=$(mktemp "$directory/.selinux-label-version.XXXXXX")
+trap 'rm -f "$temporary"' EXIT
+trap 'exit 1' HUP INT TERM
+printf '%s\n' "$version" > "$temporary"
+restorecon -F "$temporary"
+sync -f "$temporary"
+mv "$temporary" "$marker"
+restorecon -F "$marker"
+sync -f "$directory"
+trap - EXIT HUP INT TERM

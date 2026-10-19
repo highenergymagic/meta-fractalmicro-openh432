@@ -13,6 +13,34 @@ spec.loader.exec_module(deployment)
 
 
 class ConfigurationDeploymentTests(unittest.TestCase):
+    def test_policy_label_upgrade_preserves_local_content(self):
+        before = dict(kind="file", value="vendor", mode=0o600, uid=0, gid=0, xattrs={})
+        local = {**before, "value": "local", "xattrs": {"security.selinux": "old"}}
+        vendor = {**before, "xattrs": {"security.selinux": "new"}}
+        source, chosen = deployment.plan({"a": before}, {"a": local}, {"a": vendor})["a"]
+        self.assertEqual(source, "current")
+        self.assertEqual(chosen["value"], "local")
+        self.assertEqual(chosen["xattrs"], {"security.selinux": "new"})
+        self.assertEqual(local["xattrs"], {"security.selinux": "old"})
+
+    def test_labels_do_not_hide_content_or_capability_conflicts(self):
+        before = dict(kind="file", value="vendor", mode=0o600, uid=0, gid=0, xattrs={})
+        local = {**before, "xattrs": {"security.capability": "local"}}
+        vendor = {**before, "xattrs": {"security.capability": "vendor", "security.selinux": "new"}}
+        with self.assertRaises(deployment.Conflict):
+            deployment.plan({"a": before}, {"a": local}, {"a": vendor})
+        with self.assertRaises(deployment.Conflict):
+            deployment.plan({"a": before}, {"a": {**before, "value": "local"}},
+                            {"a": {**vendor, "value": "changed"}})
+
+    def test_rollback_removes_vendor_label_without_losing_local_edit(self):
+        before = dict(kind="file", value="vendor", mode=0o600, uid=0, gid=0,
+                      xattrs={"security.selinux": "new"})
+        local = {**before, "value": "local"}
+        vendor = {**before, "xattrs": {}}
+        source, chosen = deployment.plan({"a": before}, {"a": local}, {"a": vendor})["a"]
+        self.assertEqual((source, chosen["value"], chosen["xattrs"]), ("current", "local", {}))
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

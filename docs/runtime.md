@@ -32,7 +32,7 @@ for layout and write boundaries.
 
 | Service or interface | Policy |
 | --- | --- |
-| Ethernet | systemd-networkd DHCP |
+| Ethernet / Wi-Fi | NetworkManager in standard systembase; networkd in older diagnostic compositions; see [networking](networking.md) for qualification limits |
 | Wi-Fi | SDIO module autoload with extracted radio firmware; FMRegulatory sets the country; station credentials supplied separately |
 | Bluetooth | BlueZ packaged; FMBluetoothTransport disabled pending automatic factory initialization |
 | GPS | Local-only gpsd with proxy-backed RAM assistance; automatic start after 90 seconds |
@@ -193,6 +193,16 @@ initialization. These settings apply only to the H432B machine.
 Development images provide an unauthenticated physical USB root console.
 They are not suitable for production or security-sensitive use.
 Generic images do not contain network credentials or user keys.
+
+SELinux qualification uses permissive mode; it does not yet provide an
+enforced application boundary. `auditd` records audit events in
+`/var/log/audit/audit.log`, accessible to root. Raw records avoid name-service
+lookups on the logging path. Logs rotate at 8 MiB with three files retained;
+low-space conditions suspend file logging rather than halt the appliance.
+Use `auditctl -s` to check collector status and `ausearch -m AVC -ts boot` to
+inspect policy denials. Early events before the collector starts, and events
+when it is unavailable, may still appear in the kernel log. A quiet `dmesg`
+does not establish policy correctness or enforcement readiness.
 
 The [support matrix](https://github.com/highenergymagic/openh432-build/blob/main/docs/status.md)
 distinguishes runtime integration from optional diagnostics and unsupported

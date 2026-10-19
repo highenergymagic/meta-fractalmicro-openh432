@@ -1,7 +1,14 @@
 # SPDX-License-Identifier: MIT
 require openh432-base-image.inc
+inherit openh432-selinux-image
 SUMMARY = "Slot-independent NAND systembase with systemd, networking and system sounds"
+OPENH432_NETWORK_PACKAGE = "networkmanager-daemon"
+OPENH432_NETWORK_EXECUTABLE = "usr/sbin/NetworkManager"
 IMAGE_INSTALL:append = " openh432-power-key openh432-watchdog"
+IMAGE_INSTALL:append = " openh432-networkmanager openh432-settings"
+IMAGE_INSTALL:append = " openh432-adbd"
+IMAGE_INSTALL:append = " refpolicy-targeted libselinux-bin policycoreutils-sestatus policycoreutils-setfiles"
+IMAGE_INSTALL:append = " openh432-selinux-state auditd"
 IMAGE_INSTALL:append = " openh432-storage h432b-storage-policy"
 OPENH432_PERSISTENT_STORAGE ?= "0"
 do_rootfs[depends] += "openh432-systemext:do_image_complete"
@@ -13,7 +20,7 @@ embed_systemext_contract() {
         touch ${IMAGE_ROOTFS}/usr/lib/openh432/persistent-storage
     fi
 }
-IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-wired-policy openh432-maintenance-ssh gpsd gps-utils openh432-agps openh432-wifi openh432-bluetooth h432b-vibrator-test openh432-braille openh432-local-console openh432-boot-success openh432-suspend openh432-udev-policy openh432-speech"
+IMAGE_INSTALL:append = " openh432-system-sounds kde3-sounds openh432-nand-sound-policy openh432-maintenance-ssh gpsd gps-utils openh432-agps openh432-wifi openh432-bluetooth h432b-vibrator-test openh432-braille openh432-local-console openh432-boot-success openh432-suspend openh432-udev-policy openh432-speech"
 # Gzip reduces cold executable startup cost on Cortex-A8; keep one compressor thread.
 IMAGE_FSTYPES = "squashfs"
 SRC_URI += "file://make-verity-image.py"

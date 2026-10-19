@@ -43,7 +43,8 @@ under the private `/run/brltty` directory. No TCP listener, shared secret
 or network-accessible braille service is configured.
 
 Application-specific access and privilege reduction require separate policy.
-Runtime configuration remains subject to the image's volatile overlay.
+Runtime configuration follows the selected storage mode: volatile by default,
+or retained in the release's `/etc` deployment with persistent storage enabled.
 
 ## Scope
 

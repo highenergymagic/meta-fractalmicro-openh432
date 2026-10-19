@@ -23,6 +23,7 @@ pinned layer composition and build commands. The composition includes
 OpenEmbedded Core, meta-oe, the hardware layer and
 [meta-fractalmicro-assets](https://github.com/highenergymagic/meta-fractalmicro-assets).
 The assets layer supplies separately licensed system sounds and speech data.
+The pinned `meta-selinux` layer supplies the baseline security policy.
 
 ## Images
 
@@ -48,6 +49,7 @@ prerequisites are listed in the
 - [Runtime policy](docs/runtime.md): root filesystem, services and state lifetime.
 - [Networking](docs/networking.md): connection ownership, persistent profiles and authorization.
 - [System settings](docs/settings.md): typed CLI/D-Bus preferences and storage boundaries.
+- [SELinux integration](docs/selinux.md): policy ownership, labeling and qualification limits.
 - [Persistent storage](docs/persistent-storage.md): internal-SD layout, configuration deployments and explicit provisioning.
 - [Systembase integrity](docs/verity.md): image pairing, verification and initramfs recovery.
 - [Braille console](docs/braille.md): internal display, keyboard ownership and local-console integration.

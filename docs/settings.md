@@ -46,16 +46,8 @@ secure settings. The qualification configuration is permissive and therefore
 does not enforce those constraints. Application identities and delegated secure
 settings authorization remain separate integration work.
 
-Policy is supplied by the immutable OS under `/usr/share/openh432/selinux`;
-`/etc/selinux` points there. Base and extension images are labeled at build
-time. A build-generated policy identity avoids hashing the full policy from
-NAND during each boot. Persistent state is relabeled when that identity changes.
-The ephemeral root directory receives the immutable root's label after policy
-load on every boot, without parsing the file-context database or recursively
-relabeling the root filesystem. `/etc` deployment merging treats SELinux labels
-as vendor metadata rather than user edits; file content, ownership, capabilities
-and other extended attributes retain their normal merge semantics. Policy
-updates must preserve access to shared state across supported slot rollbacks.
+See [SELinux integration](selinux.md) for policy composition, filesystem
+labeling, audit collection and enforcement qualification.
 
 `secure` denotes authorization, not encrypted storage. Do not put secrets in
 this API. Secure values are omitted from broadcast notifications. The database
@@ -100,10 +92,6 @@ appliance-account global writes, secure-scope denial, privileged secure access,
 invalid requests and persistence across a service restart and an installed-image
 reboot. A/B rollback and abrupt power-loss durability require separate qualification.
 
-The SELinux qualification image has verified policy loading, the settings
-daemon's domain transition, executable/database labels, persistent-state
-labeling and the existing API authorization checks on hardware. It remains
-permissive: enforcing-mode boot, application isolation, suspend/resume and
-policy rollback compatibility are not qualified. Root handoff labels, system
-service permissions and policy-loading overhead require further integration
-before enabling enforcement in a release image.
+SELinux policy loading, the settings domain transition and executable/database
+labels have been checked on hardware in permissive mode. These checks do not
+establish an enforced application boundary.

@@ -44,11 +44,13 @@ allowance only after both images pass readback. The capacity remains 1651 LEBs
 and the IDs remain 3 for A and 4 for B. Kernel and boot-state volume flags do not
 change. UBI still verifies a completed static-volume update.
 
-The target-side
-[`install-verity-slot.sh`](https://github.com/highenergymagic/openh432-tools/blob/main/scripts/install-verity-slot.sh)
-implements that inactive-slot sequence. It requires matching artifact hashes,
-explicit replacement confirmation and a healthy active fallback. It does not
-reboot or provide an authenticated update manifest.
+On a provisioned device, use modern U-Boot's fastboot interface to install
+and validate the complete inactive-slot image set before activation.
+Persistent-storage images also require the matched system extension; see
+[slot updates](persistent-storage.md#slot-updates). The former target-side
+`install-verity-slot.sh` helper is retired and refuses all writes because
+artifact hashes alone do not validate image binding. Fastboot integrity
+checks do not authenticate releases or provision legacy volume flags.
 
 ## Runtime behavior
 

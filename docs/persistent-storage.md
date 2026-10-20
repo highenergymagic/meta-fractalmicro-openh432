@@ -148,6 +148,7 @@ It must operate from initramfs with those filesystems unmounted. The separate
 ```text
 storage-provision install --factory-root ROOT --extension PAYLOAD --confirm-erase-internal-mmc
 storage-provision factory-reset --factory-root ROOT --confirm-erase-internal-mmc
+storage-provision wipe-cache --confirm-erase-internal-mmc
 ```
 
 `ROOT` is a mounted, verified systembase tree; `PAYLOAD` is the matching

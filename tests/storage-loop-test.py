@@ -76,6 +76,11 @@ def main():
                 with open(loop + 'p' + str(number), 'rb') as stream:
                     assert hashlib.sha256(stream.read(extension.stat().st_size)).hexdigest() == expected_hash
         check_extensions()
+        storage.run('mount', '-t', 'f2fs', loop + 'p3', mountpoint)
+        mounted = True
+        (mountpoint / 'cache-sentinel').write_text('discard on cache reset\n')
+        storage.run('umount', mountpoint)
+        mounted = False
         storage.run('mount', '-t', 'btrfs', '-o', 'subvolid=5', loop + 'p4', mountpoint)
         mounted = True
         assert (mountpoint / 'layout-version').read_text() == '1\n'
@@ -120,6 +125,20 @@ def main():
         assert not rejected.exists()
         storage.run('umount', mountpoint)
         mounted = False
+        provision.wipe_cache(loop)
+        check_extensions()
+        assert json.loads(storage.run('sfdisk', '--json', loop)) == table
+        storage.run('mount', '-t', 'f2fs', loop + 'p3', mountpoint)
+        mounted = True
+        assert not (mountpoint / 'cache-sentinel').exists()
+        storage.run('umount', mountpoint)
+        mounted = False
+        storage.run('mount', '-t', 'btrfs', '-o', 'subvolid=5', loop + 'p4', mountpoint)
+        mounted = True
+        assert data.read_bytes() == b'application-owned state'
+        assert (mountpoint / 'identity/machine-id').read_text() == old_identity
+        storage.run('umount', mountpoint)
+        mounted = False
         provision.provision(loop, factory, reset=True)
         check_extensions()
         assert json.loads(storage.run('sfdisk', '--json', loop)) == table
@@ -128,7 +147,7 @@ def main():
         assert not data.exists() and not old.exists() and not new.exists()
         assert (mountpoint / 'layout-version').read_text() == '1\n'
         assert (mountpoint / 'identity/machine-id').read_text() != old_identity
-        print('PASS: provisioning, configuration update/conflict/interruption, rollback data isolation, factory reset preserves extensions/GPT', flush=True)
+        print('PASS: provisioning, configuration update/conflict/interruption, rollback data isolation, cache wipe preserves userdata/extensions/GPT, factory reset preserves extensions/GPT', flush=True)
     finally:
         if mounted:
             storage.run('umount', mountpoint)

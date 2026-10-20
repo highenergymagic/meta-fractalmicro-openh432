@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Explicit internal-MMC provisioning/reset. Never used during normal boot."""
 import argparse
+import fcntl
 import importlib.util
 from importlib.machinery import SourceFileLoader
 import json
@@ -12,6 +13,13 @@ import subprocess
 import tempfile
 import time
 import uuid
+
+PROGRESS = False
+
+
+def progress(percent, label):
+    if PROGRESS:
+        print(f'OPENH432_PROGRESS {percent} {label}', flush=True)
 
 
 def runtime():
@@ -51,6 +59,8 @@ def initialize_userdata(device, factory):
             if name in ('var', 'home', 'root') and (factory / name).is_dir():
                 # Preserve numeric ownership, modes and symlinks in factory data.
                 runtime_module.run('cp', '-a', str(factory / name) + '/.', destination)
+            progress(55 + ('var', 'home', 'root', 'data', 'identity', 'deployments').index(name) * 7,
+                     'creating ' + name)
         (mountpoint / 'identity').chmod(0o700)
         (mountpoint / 'deployments').chmod(0o700)
         (mountpoint / 'root').chmod(0o700)
@@ -59,6 +69,7 @@ def initialize_userdata(device, factory):
         # Mark provisioned only after every subvolume and seed file is durable.
         runtime_module.run('sync', '-f', mountpoint)
         runtime_module.durable_text(mountpoint / 'layout-version', '1\n')
+        progress(95, 'syncing storage')
     finally:
         if mounted:
             runtime_module.run('umount', mountpoint)
@@ -67,7 +78,11 @@ def initialize_userdata(device, factory):
 
 def provision(device, factory, extension=None, reset=False):
     storage = runtime()
+    if any(not (factory / name).is_dir() or (factory / name).is_symlink()
+           for name in ('var', 'home', 'root')):
+        raise ValueError('factory seed directories missing or unsafe')
     ensure_unmounted(device)
+    progress(5, 'checking layout')
     if reset:
         parts = storage.validate_layout(json.loads(storage.run('sfdisk', '--json', device)))
     else:
@@ -109,27 +124,61 @@ def provision(device, factory, extension=None, reset=False):
                 '--hash=sha256', '--data-block-size=4096', '--hash-block-size=4096',
                 f'--data-blocks={blocks}', f'--hash-offset={blocks * 4096}',
                 f'--salt={salt}', partition, partition, digest)
+    progress(10, 'formatting cache')
     storage.run('mkfs.f2fs', '-f', '-l', 'cache', expected[2])
+    progress(30, 'formatting userdata')
     storage.run('mkfs.btrfs', '-f', '-L', 'userdata', expected[3])
+    progress(50, 'creating defaults')
     initialize_userdata(expected[3], factory)
+    progress(99, 'reset complete')
+
+
+def wipe_cache(device):
+    """Erase only cache on a recognized, inactive internal-SD layout."""
+    storage = runtime()
+    ensure_unmounted(device)
+    parts = storage.validate_layout(json.loads(storage.run('sfdisk', '--json', device)))
+    expected = [device + 'p' + str(i) for i in range(1, 5)]
+    if [p['node'] for p in parts] != expected:
+        raise ValueError('unexpected partition devices')
+    if not Path(expected[2]).is_block_device():
+        raise ValueError('cache partition device missing')
+    progress(25, 'formatting cache')
+    storage.run('mkfs.f2fs', '-f', '-l', 'cache', expected[2])
+    progress(99, 'cache complete')
 
 
 def main():
+    global PROGRESS
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('install', 'factory-reset'))
-    parser.add_argument('--factory-root', type=Path, required=True)
+    parser.add_argument('operation', choices=('install', 'factory-reset', 'wipe-cache'))
+    parser.add_argument('--factory-root', type=Path)
     parser.add_argument('--extension', type=Path)
     parser.add_argument('--confirm-erase-internal-mmc', action='store_true')
+    parser.add_argument('--progress', action='store_true',
+                        help='emit completed-stage progress for the local recovery UI')
     args = parser.parse_args()
+    PROGRESS = args.progress
     if os.geteuid() != 0 or not args.confirm_erase_internal_mmc:
         parser.error('requires root and --confirm-erase-internal-mmc')
     if Path('/run/systemd/system').exists():
         parser.error('requires initramfs recovery, not a running system')
-    if not args.factory_root.is_absolute() or args.factory_root.is_symlink():
-        parser.error('factory root must be an absolute real directory')
+    if args.operation != 'wipe-cache':
+        if (args.factory_root is None or not args.factory_root.is_absolute()
+                or args.factory_root.is_symlink() or not args.factory_root.is_dir()):
+            parser.error('factory root must be an absolute real directory')
+    elif args.factory_root is not None or args.extension is not None:
+        parser.error('wipe-cache does not accept factory or extension inputs')
     try:
-        provision(runtime().internal_device(), args.factory_root,
-                  args.extension, args.operation == 'factory-reset')
+        # Serialize the local menu and the physical USB maintenance shell.
+        with open('/run/openh432-provision.lock', 'a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            device = runtime().internal_device()
+            if args.operation == 'wipe-cache':
+                wipe_cache(device)
+            else:
+                provision(device, args.factory_root,
+                          args.extension, args.operation == 'factory-reset')
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'Storage operation failed; remain in recovery: {error}\n')
 

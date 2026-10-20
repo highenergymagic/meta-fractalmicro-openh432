@@ -28,6 +28,7 @@ mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mkdir -p /run
 mount -t tmpfs -o mode=0755,size=10% tmpfs /run
+/usr/libexec/openh432/braille-progress mark "loading root" 0 || :
 # Keep helper diagnostics in RAM even when no host has opened the USB console.
 exec 3>&1 4>&2
 exec >/run/openh432-handoff.log 2>&1
@@ -69,6 +70,7 @@ done
 # The normal runtime allows UBI wear maintenance. Legacy read-only kernels
 # remain mount-compatible; immutability belongs to the SquashFS root image.
 ubiattach /dev/ubi_ctrl -m "$mtd" || fail "UBI attach"
+/usr/libexec/openh432/braille-progress mark "nand ready" 1 || :
 ubi=
 for node in /sys/class/ubi/ubi[0-9]*; do
     [ -f "$node/mtd_num" ] || continue
@@ -94,6 +96,7 @@ ubiblock --create "/dev/$volume" || fail "ubiblock creation"
 block="/dev/ubiblock${volume#ubi}"
 /usr/libexec/openh432-verity-open "$volume" "$block" || fail "root integrity mapping"
 echo "Verity ready $(cut -d ' ' -f 1 /proc/uptime)"
+/usr/libexec/openh432/braille-progress mark "root verified" 2 || :
 mkdir -p /lower /writable /newroot
 mount -t squashfs -o ro /dev/mapper/systembase /lower || fail "SquashFS mount"
 image_slot=$(cat /lower/usr/lib/openh432/root-slot)
@@ -104,6 +107,7 @@ mount -t tmpfs -o mode=0755,size=64m tmpfs /writable
 mkdir /writable/upper /writable/work
 mount -t overlay overlay -o lowerdir=/lower,upperdir=/writable/upper,workdir=/writable/work /newroot || fail "root overlay"
 echo "Root mounts ready $(cut -d ' ' -f 1 /proc/uptime)"
+/usr/libexec/openh432/braille-progress mark "preparing storage" 3 || :
 mkdir -p /newroot/.openh432/lower /newroot/.openh432/writable /newroot/dev /newroot/proc /newroot/sys /newroot/run
 mount --move /lower /newroot/.openh432/lower
 mount --move /writable /newroot/.openh432/writable
@@ -123,7 +127,9 @@ if [ -f /newroot/usr/lib/openh432/persistent-storage ]; then
         fail "persistent storage activation"
     fi
 fi
+chroot /newroot /usr/libexec/openh432/braille-progress mark "storage ready" 4 || :
 read -r uptime unused </newroot/proc/uptime
 echo "Switch root $uptime"
+chroot /newroot /usr/libexec/openh432/braille-progress mark "starting services" 5 || :
 exec 1>&3 2>&4 3>&- 4>&-
 exec switch_root /newroot /sbin/init

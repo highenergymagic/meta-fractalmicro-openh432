@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 SRC_URI = "file://init file://early-sound file://verity-open file://initramfs-recovery file://start-early-sound"
 S = "${UNPACKDIR}"
 inherit allarch
-RDEPENDS:${PN} = "busybox coreutils mtd-utils-ubifs libdevmapper util-linux-flock"
+RDEPENDS:${PN} = "busybox coreutils mtd-utils-ubifs libdevmapper util-linux-flock openh432-braille-progress"
 do_install() {
     install -m 0755 ${UNPACKDIR}/init ${D}/init
     install -d ${D}${libexecdir}

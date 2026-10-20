@@ -1,0 +1,39 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Standalone recovery: no disk mounts, formatting, or slot acknowledgement.
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+mount -t devtmpfs devtmpfs /dev || exec /bin/sh
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mkdir -p /run /tmp
+mount -t tmpfs -o mode=0755 tmpfs /run
+mount -t tmpfs -o mode=1777 tmpfs /tmp
+touch /run/openh432-recovery
+/usr/libexec/openh432/braille-progress show "starting recovery" 33 || :
+# The development USB shell is independent of the local menu. No host is
+# required for recovery; a disconnected terminal must never block PID 1.
+(
+    while :; do
+        ready=no
+        for udc in /sys/class/udc/*; do
+            [ -f "$udc/state" ] || continue
+            [ "$(cat "$udc/state")" = configured ] && ready=yes
+        done
+        if [ "$ready" = yes ] && [ -c /dev/ttyGS0 ]; then
+            setsid -c /bin/sh -c 'stty sane -echo; exec /bin/sh -i' \
+                </dev/ttyGS0 >/dev/ttyGS0 2>&1
+        fi
+        sleep 1
+    done
+) &
+# No watchdog is opened: recovery intentionally has no systemd watchdog owner.
+# Retry device discovery briefly, then retain USB diagnostics on UI failure.
+remaining=20
+while [ ! -c /dev/h432b-braille ] && [ "$remaining" -gt 0 ]; do
+    sleep 1
+    remaining=$((remaining - 1))
+done
+/usr/libexec/openh432/braille-progress show "starting recovery" 66 || :
+/usr/libexec/openh432/recovery-ui >/run/openh432-recovery-ui.log 2>&1
+# Never repeat an erase after an error, reboot, or application exit.
+while :; do sleep 3600; done

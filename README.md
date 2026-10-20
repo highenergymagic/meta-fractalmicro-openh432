@@ -32,7 +32,8 @@ The pinned `meta-selinux` layer supplies the baseline security policy.
 | `openh432-nand-b` | Slot-independent kernel bundle and loader-selected root handoff |
 | `openh432-systembase-b` | Separate SquashFS system userspace with dm-verity integrity |
 | `openh432-systemext` | EROFS system extension with dm-verity for persistent-storage installations |
-| `openh432-fastboot-ram` | Standalone RAM environment for recovery and development |
+| `openh432-recovery-image` | Independent recovery kernel/RAM root with braille reset menu |
+| `openh432-fastboot-ram` | Full standalone development RAM environment |
 
 The NAND kernel mounts the slot-matched systembase and starts systemd.
 The same image pair supports either slot; historical `-b` recipe names remain
@@ -51,6 +52,7 @@ prerequisites are listed in the
 - [System settings](docs/settings.md): typed CLI/D-Bus preferences and storage boundaries.
 - [SELinux integration](docs/selinux.md): policy ownership, labeling and qualification limits.
 - [Persistent storage](docs/persistent-storage.md): internal-SD layout, configuration deployments and explicit provisioning.
+- [Accessible recovery](docs/recovery.md): independent boot, factory reset, cache reset and provisioning boundaries.
 - [Systembase integrity](docs/verity.md): image pairing, verification and initramfs recovery.
 - [Braille console](docs/braille.md): internal display, keyboard ownership and local-console integration.
 - [Remote access](docs/remote-access.md): maintenance SSH and credentials.
